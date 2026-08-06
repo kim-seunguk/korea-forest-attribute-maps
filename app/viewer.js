@@ -29,6 +29,12 @@ var CURRENT_LOCATION_ICON = 'data:image/svg+xml;base64,' +
   'LjUyIDEzIDMuMDZWMWgtMnYyLjA2QzYuODMgMy41MiAzLjUyIDYuODMgMy4wNiAxMUgxdjJoMi4wNmMuNDYgNC4xNyAzLjc3IDcuNDggNy45' +
   'NCA3Ljk0VjIzaDJ2LTIuMDZjNC4xNy0uNDYgNy40OC0zLjc3IDcuOTQtNy45NEgyM3YtMmgtMi4wNnpNMTIgMTljLTMuODcgMC03LTMuMTMt' +
   'Ny03czMuMTMtNyA3LTcgNyAzLjEzIDcgNy0zLjEzIDctNyA3eiIvPjwvZz48L3N2Zz4=';
+var BASEMAP_CONTROL_ICON = 'data:image/svg+xml;base64,' +
+  'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMy' +
+  'Ij48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjMxIiBoZWlnaHQ9IjMxIiByeD0iMi41IiBmaWxsPSIjRkZGRkZGIiBzdHJva2U9IiNC' +
+  'REJEQkQiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0IDQpIj48cGF0aCBmaWxsPSIjM0M0MDQzIiBkPSJNMTEuOTkgMTguNTQgNC42MiAx' +
+  'Mi44MSAzIDE0LjA3bDkgNyA5LTctMS42My0xLjI3LTcuMzggNS43NHpNMTIgMTZsNy4zNi01LjczTDIxIDlsLTktNy05IDcgMS42MyAxLjI3' +
+  'TDEyIDE2em0wLTExLjQ3TDE3Ljc0IDkgMTIgMTMuNDcgNi4yNiA5IDEyIDQuNTN6Ii8+PC9nPjwvc3ZnPg==';
 var READOUT_HIGHLIGHT_COLOR = '#000080';
 var MOBILE_TITLE_FONT_SIZE = '19px';
 var MOBILE_BODY_FONT_SIZE = '16px';
@@ -152,6 +158,10 @@ var UI_TEXT = {
     'mobile.readout_toggle': 'Show / hide cell readout',
     'mobile.info_toggle': 'Show / hide dataset information',
     'language.toggle': '한국어 / English',
+    'basemap.control': 'Basemap settings',
+    'basemap.map': 'Map',
+    'basemap.satellite': 'Satellite',
+    'basemap.labels': 'Show labels',
     'location.button': 'Show my location',
     'location.layer': 'Current location',
     'legend.species_others': 'Others (25 species, 2 % of area)',
@@ -240,6 +250,10 @@ var UI_TEXT = {
     'mobile.readout_toggle': '지점 상세정보 표시 / 숨기기',
     'mobile.info_toggle': '데이터셋 정보 표시 / 숨기기',
     'language.toggle': '한국어 / English',
+    'basemap.control': '기본지도 설정',
+    'basemap.map': '지도',
+    'basemap.satellite': '위성',
+    'basemap.labels': '라벨 표시',
     'location.button': '현재 위치 보기',
     'location.layer': '현재 위치',
     'legend.species_others': '기타 수종 (25종, 전체 면적의 2%)',
@@ -496,7 +510,7 @@ var HOME_BOX = ee.Geometry.Rectangle([126.0, 34.2, 129.6, 38.65], null, false);
 var leftMap = ui.Map(), rightMap = ui.Map();
 [leftMap, rightMap].forEach(function (m) {
   m.setOptions('SATELLITE');
-  m.setControlVisibility({all: false, zoomControl: true, mapTypeControl: true});
+  m.setControlVisibility({all: false, zoomControl: true, mapTypeControl: false});
   m.style().set({cursor: 'crosshair', stretch: 'both'});
   m.setCenter(HOME.lon, HOME.lat, HOME.zoom);
 });
@@ -513,6 +527,87 @@ var view = {lon: HOME.lon, lat: HOME.lat, zoom: HOME.zoom};
 function restoreView(map) {
   map.setCenter(view.lon, view.lat, view.zoom);
 }
+
+// ---- independent basemap controls -------------------------------------------------------------
+var BASEMAP_NO_LABELS_ID = 'ROADMAP_NO_LABELS';
+var BASEMAP_STYLES = {};
+BASEMAP_STYLES[BASEMAP_NO_LABELS_ID] = [
+  {elementType: 'labels', stylers: [{visibility: 'off'}]}
+];
+var BASEMAP_TYPES = ['map', 'satellite'];
+var basemapControls = [];
+
+function basemapTypeLabel(mapType) {
+  return tr(mapType === 'map' ? 'basemap.map' : 'basemap.satellite');
+}
+
+function applyBasemap(control) {
+  var mapTypeId = control.mapType === 'satellite' ?
+    (control.labels ? 'HYBRID' : 'SATELLITE') :
+    (control.labels ? 'ROADMAP' : BASEMAP_NO_LABELS_ID);
+  control.map.setOptions({
+    mapTypeId: mapTypeId,
+    styles: BASEMAP_STYLES,
+    types: ['ROADMAP', 'SATELLITE', 'HYBRID', BASEMAP_NO_LABELS_ID]
+  });
+}
+
+function syncBasemapControlLanguage(control) {
+  control.selector.items().reset(BASEMAP_TYPES.map(basemapTypeLabel));
+  control.selector.setValue(basemapTypeLabel(control.mapType), false);
+  control.labelsCheckbox.setLabel(tr('basemap.labels'));
+}
+
+function refreshBasemapControls() {
+  basemapControls.forEach(syncBasemapControlLanguage);
+}
+
+function setBasemapMenuOpen(control, open) {
+  basemapControls.forEach(function (item) {
+    item.open = item === control ? open : false;
+    item.body.style().set('shown', item.open);
+  });
+}
+
+function makeBasemapControl(map, position, margin) {
+  var control = {map: map, mapType: 'satellite', labels: false, open: false};
+  control.selector = ui.Select({
+    items: BASEMAP_TYPES.map(basemapTypeLabel),
+    value: basemapTypeLabel(control.mapType),
+    style: {stretch: 'horizontal', margin: '0 0 4px 0', fontSize: '12px'},
+    onChange: function (display) {
+      control.mapType = display === tr('basemap.map') ? 'map' : 'satellite';
+      applyBasemap(control);
+    }
+  });
+  control.labelsCheckbox = ui.Checkbox(
+    tr('basemap.labels'), control.labels, function (checked) {
+      control.labels = checked;
+      applyBasemap(control);
+    }, false, {stretch: 'horizontal', margin: '2px 0 0 0', fontSize: '12px'});
+  control.body = ui.Panel([control.selector, control.labelsCheckbox],
+                          ui.Panel.Layout.flow('vertical'),
+                          {shown: false, width: '132px', padding: '6px', margin: '2px 0 0 0',
+                           backgroundColor: '#FFFFFF', border: '1px solid #BDBDBD'});
+  control.toggle = localizedButton('basemap.control', {
+    imageUrl: BASEMAP_CONTROL_ICON,
+    style: {width: '32px', height: '32px', padding: '0',
+            margin: position === 'top-right' ? '0 0 0 auto' : '0'},
+    onClick: function () {
+      setBasemapMenuOpen(control, !control.open);
+    }
+  });
+  control.panel = ui.Panel([control.toggle, control.body], ui.Panel.Layout.flow('vertical'),
+                           {position: position, margin: margin, padding: '0'});
+  basemapControls.push(control);
+  map.add(control.panel);
+  applyBasemap(control);
+  return control;
+}
+
+// The wipe can cover the right edge of the left map, so its control sits beside the zoom buttons.
+var leftBasemapControl = makeBasemapControl(leftMap, 'top-left', '8px 0 0 46px');
+var rightBasemapControl = makeBasemapControl(rightMap, 'top-right', '8px');
 
 // ---- current device location ------------------------------------------------------------------
 var currentLocationPoint = null;
@@ -1321,6 +1416,7 @@ function setLanguage(language) {
   if (language === currentLanguage) { return; }
   currentLanguage = language;
   refreshLocalizedWidgets();
+  refreshBasemapControls();
   refreshLocationButtons();
   syncLayoutSelector();
   syncPlaceSelectors();
