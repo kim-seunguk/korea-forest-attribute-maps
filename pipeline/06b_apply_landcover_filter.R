@@ -1,0 +1,117 @@
+# 06b_apply_landcover_filter.R — remove cells an independent land-cover map says cannot be forest.
+# ================================================================================================
+# The delivered maps inherit their extent from the forest-type map, which commits some non-forest to
+# forest: airports, urban blocks, reservoirs, quarries, bare rock. The national land-cover map is an
+# independent source, so its disagreement is informative.
+#
+# Removed  built, water and barren — surfaces that cannot carry trees.
+# Kept     agriculture, grassland and wetland. Disagreement there often reflects real tree cover in
+#          orchards and sparse or edge regeneration, and removing it would be a large omission.
+#
+# Predicted biomass deliberately plays no part in the decision. The models are fitted inside the
+# forest mask, so they return forest-like values even over an airport; using them to adjudicate
+# would just confirm the error. The land-cover classes decide.
+#
+# Applied in place to both product families, and idempotent: it only ever sets cells to NA, never
+# restores them, so a second run changes nothing.
+#
+#   direct prediction      outputs/nfi8/m8_maps_30m/*.tif and m8_uncertainty_30m/*.tif
+#   plot-index imputation  outputs/nfi8/index/imputation{_base,_ftm}.tif
+#                          and attributes{_base,_ftm}/spec30m_*.tif
+#
+# The mask is re-aligned per file, cropping or extending as needed, so families on slightly
+# different extents are both handled.
+#
+# Each file is read, masked, written to a temporary file and then swapped in atomically, which
+# avoids the read/write lock on Windows. Stale .ovr sidecars are dropped so overviews rebuild.
+#
+# ! Re-run this after any step that rewrites a raster. The filter is lost on overwrite.
+#   source(here::here("pipeline", "06b_apply_landcover_filter.R"))
+# ================================================================================================
+suppressPackageStartupMessages({ library(here); library(terra) })
+source(here("R", "paths.R"))
+terra::terraOptions(progress = 0)
+
+REMOVE_CODES <- c(100L, 600L, 700L)                               # built, barren, water
+CELL_HA <- 30 * 30 / 1e4
+L1_TIF  <- here("data", "interim", "landcover_mcee_30m", "landcover_L1_30m.tif")
+require_file(L1_TIF)
+
+## ---- build the delivered-grid remove-mask (1 = remove, 0 = keep) ------------------------------------
+L1    <- terra::rast(L1_TIF)
+# TRUE = remove. A cell the land-cover map does not cover comes out FALSE, which is what we want:
+# nothing is removed without evidence. The resampled masks further down need an explicit NA -> 0,
+# because resampling onto another grid does introduce NA outside this one's extent.
+mask0 <- L1 %in% REMOVE_CODES
+
+## ---- per-file apply (atomic, datatype/nodata-preserving) ---------------------------------------
+apply_one <- function(f, m) {
+  r <- terra::rast(f)
+  # The mask and the target may sit on grids that are not cell-aligned, and cropping can only fix an
+  # extent that already aligns. Nearest resampling regrids the 0/1 mask onto whatever grid the file
+  # uses; a sub-cell shift does not matter for a built, water and barren removal mask.
+  if (!terra::compareGeom(m, r, stopOnError = FALSE, messages = FALSE, crs = FALSE)) {
+    m <- terra::subst(terra::resample(m, r, method = "near"), NA, 0L)
+  }
+  # Both are EPSG:5179, but imputation_ftm.tif is written by `raster` with different WKT text, which
+  # makes terra::mask complain about mismatched CRS on cells that already align.
+  terra::crs(m) <- terra::crs(r)
+  dt <- terra::datatype(r)[1]
+  # nodata by dtype: float -> NaN; uint8 class maps (domsp, V_*) -> 255; int8 (shannon_int) -> -128.
+  # ⚠ MUST match the raster's real nodata: a uint8 map written with NAflag=-128 wraps to 255->128 and DROPS the
+  #    nodata tag, so the ocean (ex-255) becomes a valid code 128 and the whole grid reads as "valid" (corruption
+  #    seen on the already-finalized full domsp). uint8 -> 255 keeps re-filtering idempotent.
+  na <- if (grepl("^FLT", dt)) NaN else if (dt == "INT1U") 255 else -128
+  nb <- terra::global(r, "notNA")[1, 1]
+  r2 <- terra::mask(r, m, maskvalue = 1, updatevalue = NA)
+  n_after <- terra::global(r2, "notNA")[1, 1]
+
+  tmp <- paste0(f, ".tmp.tif")
+  terra::writeRaster(r2, tmp, overwrite = TRUE, datatype = dt, NAflag = na,
+                     gdal = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"))
+  rm(r, r2); gc(verbose = FALSE)
+  if (file.exists(f)) file.remove(f)
+  file.rename(tmp, f)
+  for (ext in c(".ovr", ".aux.xml")) if (file.exists(paste0(f, ext))) file.remove(paste0(f, ext))
+  cat(sprintf("  %-34s removed %s cells (%s ha)\n", basename(f),
+              format(nb - n_after, big.mark = ","), format(round((nb - n_after) * CELL_HA), big.mark = ",")))
+}
+
+## ---- optional restriction: LC_ONLY = character vector of BASENAMES to filter -------------------
+# A repair run replaces a few layers and must not rewrite the rest. Every rewrite is another chance
+# to hit the tile-index damage this dataset has already seen, so re-filter only what changed.
+#   LC_ONLY <- c("base_conifer_fraction_30m.tif"); source(...)
+lc_keep <- function(v) if (exists("LC_ONLY")) v[basename(v) %in% LC_ONLY] else v
+
+## ---- A) direct-RF maps (delivered grid) ------------------------------------------------------------
+cat("[A] direct-RF maps (delivered grid):\n")
+direct_maps <- c(list.files(here("outputs", "nfi8", "m8_maps_30m"),        "\\.tif$", full.names = TRUE),
+           list.files(here("outputs", "nfi8", "m8_uncertainty_30m"), "\\.tif$", full.names = TRUE))
+direct_maps <- lc_keep(direct_maps[!grepl("\\.tmp\\.tif$", direct_maps)])
+for (f in direct_maps) apply_one(f, mask0)
+
+## ---- B) plot-index imputation, BOTH tiers (different grid -> resample mask) ----------------------
+cat("[B] plot-index imputation (full + base; imputation grid; mask nearest-resampled):\n")
+imp_files <- c(here("outputs", "nfi8", "index", "imputation_ftm.tif"),
+               here("outputs", "nfi8", "index", "imputation_base.tif"),
+               # The distance layer describes the match in the index beside it, so it has to lose
+               # the same cells. Leaving it out gave it a wider extent than the index it describes.
+               here("outputs", "nfi8", "index", "nearest_reference_distance_ftm.tif"),
+               here("outputs", "nfi8", "index", "nearest_reference_distance_base.tif"),
+               list.files(here("outputs", "nfi8", "attributes_ftm"),      "^spec30m_.*\\.tif$", full.names = TRUE),
+               list.files(here("outputs", "nfi8", "attributes_base"), "^spec30m_.*\\.tif$", full.names = TRUE))
+imp_files <- lc_keep(imp_files[file.exists(imp_files) & !grepl("\\.tmp\\.tif$", imp_files)])
+# per-DISTINCT-grid resampled mask (the two tiers have different row counts); apply_one re-aligns per file.
+mask_cache <- list()
+mask_for <- function(r) {
+  key <- paste(dim(r)[1:2], collapse = "x")
+  if (is.null(mask_cache[[key]]))
+    mask_cache[[key]] <<- terra::subst(terra::resample(mask0, r, method = "near"), NA, 0L)
+  mask_cache[[key]]
+}
+for (f in imp_files) apply_one(f, mask_for(terra::rast(f)))
+
+cat("\nDone. Land-cover filter (remove built/barren/water) applied in place to",
+    length(direct_maps), "direct +", length(imp_files), "imputation rasters.\n",
+    "Overviews dropped + shannon_int now stale -> run pipeline/06d_finalize_rasters.py",
+    "(rebuilds pyramids + the int8 Shannon display raster) before figures.\n")

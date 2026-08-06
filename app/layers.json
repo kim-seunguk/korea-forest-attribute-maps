@@ -1,0 +1,88 @@
+{
+  "bands": {
+    "biomass": {
+      "max": 271.1477,
+      "min": 57.5174,
+      "n_sampled": 20179485,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "biomass_sd": {
+      "max": 79.5396,
+      "min": 50.6319,
+      "n_sampled": 10098024,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "conifer_fraction": {
+      "max": 1.0,
+      "min": 0.0,
+      "range_from": "definitional"
+    },
+    "conifer_fraction_sd": {
+      "max": 0.3337,
+      "min": 0.0907,
+      "n_sampled": 10098024,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "dominant_species": {
+      "categorical": true,
+      "range_from": "legend, not a stretch"
+    },
+    "dominant_species_uncertainty": {
+      "max": 1.0,
+      "min": 0.0,
+      "range_from": "definitional"
+    },
+    "nearest_reference_distance": {
+      "max": 0.9257,
+      "min": 0.7289,
+      "n_sampled": 10098024,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "plot_index": {
+      "categorical": true,
+      "range_from": "legend, not a stretch"
+    },
+    "shannon": {
+      "max": 1.7675,
+      "min": 0.3088,
+      "n_sampled": 20196048,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "shannon_sd": {
+      "max": 0.5375,
+      "min": 0.3384,
+      "n_sampled": 10098024,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    }
+  },
+  "layers": {
+    "base_biomass_30m": "biomass",
+    "base_biomass_sd_30m": "biomass_sd",
+    "base_conifer_fraction_30m": "conifer_fraction",
+    "base_conifer_fraction_sd_30m": "conifer_fraction_sd",
+    "base_dominant_species_30m": "dominant_species",
+    "base_dominant_species_uncertainty_30m": "dominant_species_uncertainty",
+    "base_shannon_30m": "shannon",
+    "base_shannon_sd_30m": "shannon_sd",
+    "ftm_biomass_30m": "biomass",
+    "ftm_biomass_sd_30m": "biomass_sd",
+    "ftm_conifer_fraction_30m": "conifer_fraction",
+    "ftm_conifer_fraction_sd_30m": "conifer_fraction_sd",
+    "ftm_dominant_species_30m": "dominant_species",
+    "ftm_dominant_species_uncertainty_30m": "dominant_species_uncertainty",
+    "ftm_shannon_30m": "shannon",
+    "ftm_shannon_sd_30m": "shannon_sd",
+    "imputation_base": "plot_index",
+    "imputation_ftm": "plot_index",
+    "imputed_base_biomass_30m": "biomass",
+    "imputed_base_conifer_fraction_30m": "conifer_fraction",
+    "imputed_base_dominant_species_30m": "dominant_species",
+    "imputed_base_shannon_30m": "shannon",
+    "imputed_ftm_biomass_30m": "biomass",
+    "imputed_ftm_conifer_fraction_30m": "conifer_fraction",
+    "imputed_ftm_dominant_species_30m": "dominant_species",
+    "imputed_ftm_shannon_30m": "shannon",
+    "nearest_reference_distance_base": "nearest_reference_distance",
+    "nearest_reference_distance_ftm": "nearest_reference_distance"
+  }
+}
