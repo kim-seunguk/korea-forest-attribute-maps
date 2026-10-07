@@ -1,0 +1,12 @@
+statistic,value
+plots_assigned_at_least_one_cell,15999
+mapped_cells,61587083
+cells_per_plot_min,9
+cells_per_plot_median,3014
+cells_per_plot_q25,1564
+cells_per_plot_q75,5156
+cells_per_plot_max,95628
+ha_per_plot_min,0.81
+ha_per_plot_max,8606.5
+ha_per_plot_median,271.3
+area_share_pct_of_most_used_tenth,29.2

@@ -51,9 +51,9 @@ V_STAND_ATTRIBUTES <- V_PREDICTORS
 # it must not be inferred from anything else. The definition on the Earth Engine side is
 # pipeline/s2_composite.py.
 #
-# The plot feature table that 03e exports does not follow this order, because Earth Engine's table
-# export sorts its properties alphabetically, so code reading it selects columns by name. Assigning
-# that order to the raster mislabels every band, which has happened; see pipeline/05b.
+# 03e reads the plot feature table off that same raster and labels it with these names, so the
+# table and the raster agree by construction; code reading the table still selects its columns by
+# name. Assigning any other order to the raster mislabels every band.
 #
 # NDWI here is the NIR-SWIR1 moisture index (B8, B11) = NDMI (Wilson & Sader 2002), not Gao (1996)
 # NDWI. The internal label stays NDWI to match the existing tables and models; it is reported and
@@ -69,11 +69,14 @@ S2_BAND_NAMES <- as.vector(t(outer(
 # FILE_VAR translates because the two sides name things differently: the analysis keys a target by
 # its inventory column, which cannot be renamed, while the file needs a name a reader can read.
 # `Bio_a_ha` is the column, `biomass` is the file.
-FILE_TIER <- c(base = "base", full = "ftm")
+#
+# The products are built from one predictor set — the run parameter `full` — and published under
+# the file token `ftm`, after the forest-type map it includes. FILE_TIER translates one to the other.
+FILE_TIER <- c(full = "ftm")
 FILE_VAR  <- c(coniferfrac = "conifer_fraction", Bio_a_ha = "biomass",
                shannon = "shannon", domsp = "dominant_species")
 
-# tier: "base" | "full" (the run parameter)   var: a FILE_VAR key   kind: map | sd | uncertainty
+# tier: "full" (the run parameter)   var: a FILE_VAR key   kind: map | sd | uncertainty
 product_file <- function(tier, var, kind = "map") {
   t <- unname(FILE_TIER[tier]); v <- unname(FILE_VAR[var])
   if (is.na(t) || is.na(v)) stop("unknown tier/var: ", tier, " / ", var, call. = FALSE)
@@ -84,6 +87,10 @@ product_file <- function(tier, var, kind = "map") {
          stop("unknown kind: ", kind, call. = FALSE))
 }
 
-# The plot-index family. Both tiers take an explicit suffix so that a filename never has to be
-# read as "the one without a suffix".
-tier_suffix <- function(tier) paste0("_", unname(FILE_TIER[tier]))
+# The plot-index family takes the same token as an explicit suffix, so that a filename never has to
+# be read as "the one without a suffix".
+tier_suffix <- function(tier) {
+  t <- unname(FILE_TIER[tier])
+  if (is.na(t)) stop("unknown tier: ", tier, call. = FALSE)
+  paste0("_", t)
+}

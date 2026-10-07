@@ -3,7 +3,8 @@
 # Per plot (신표본점번호 = Plot_ID): composition as a basal-area fraction, coniferous and evergreen;
 # diversity as Shannon H', richness and evenness; the dominant species and its basal-area share; and
 # stand structure — biomass, carbon, basal area per hectare, stems per hectare and quadratic mean
-# diameter. Everything is basal-area weighted and the unit is the 표본점.
+# diameter. Every basal-area quantity is per hectare — each tree's basal area times its expansion
+# factor — and the unit is the 표본점.
 #
 # Composition and diversity are built for the whole stand and again for the canopy alone, under two
 # definitions of canopy membership — the field crown class, and the largest trees making up 80 % of
@@ -22,7 +23,7 @@ suppressPackageStartupMessages({ library(here); library(data.table) })
 source(here::here("R","paths.R")); source(here::here("R","run_utils.R")); source(here::here("R","eval_utils.R"))
 
 if (!exists("VERSION")) VERSION <- "nfi8"
-BA_DOM_FRAC <- 0.80     # BA-dominance: trees making up the top 80% of plot basal area = canopy
+BA_DOM_FRAC <- 0.80     # BA-dominance: trees making up the top 80% of plot basal area per hectare = canopy
 outd <- here("outputs", VERSION); dir.create(outd, showWarnings = FALSE, recursive = TRUE)
 
 cat(sprintf("\n===== build targets [%s]  canopy rules={crown,ba}  ba_dom=%.2f =====\n",
@@ -55,6 +56,11 @@ rec <- rec[!grepl("고사|죽은|dead", crown_lbl, ignore.case = TRUE)] # drop d
 # regional pine RACES are one species (Pinus densiflora) — merge so species/diversity targets are taxonomically correct
 rec[sp %in% c("강원지방소나무","중부지방소나무"), sp := "소나무"]
 rec[, ba := pi * (dbh/200)^2]                                      # basal area m^2 (dbh cm)
+# Per-hectare weight. Trees of 6-30 cm are tallied on the 0.04 ha main circle and trees of 30 cm and
+# over on the 0.08 ha large-tree circle, so a sum of unweighted basal areas gives each large tree
+# twice the weight its per-hectare share warrants. Composition, diversity and the basal-area canopy
+# rule use ba * EF, the same basis as the per-hectare structure below.
+rec[, ba_w := ba * EF]
 rec[, is_conifer   := grepl("침", cb)]                             # 침엽 -> conifer
 rec[, is_evergreen := grepl("evergreen|상록", leaf, ignore.case = TRUE)]
 # crown_cd labels are English, as the diagnostic printed above confirms:
@@ -63,7 +69,7 @@ rec[, is_evergreen := grepl("evergreen|상록", leaf, ignore.case = TRUE)]
 CANOPY_CODES <- c("a", "b")
 rec[, canopy_crown := crown_cd %in% CANOPY_CODES]
 setorder(rec, Plot_ID, -ba)
-rec[, canopy_ba := (cumsum(ba) - ba) / sum(ba) < BA_DOM_FRAC, by = Plot_ID]  # largest trees up to 80% of plot BA
+rec[, canopy_ba := (cumsum(ba_w) - ba_w) / sum(ba_w) < BA_DOM_FRAC, by = Plot_ID]  # largest trees up to 80% of plot BA per ha
 cat(sprintf("\ncanopy tree share - crown %.1f%% | ba %.1f%%  (of valid stems)\n",
             100*mean(rec$canopy_crown), 100*mean(rec$canopy_ba)))
 
@@ -71,13 +77,13 @@ cat(sprintf("\ncanopy tree share - crown %.1f%% | ba %.1f%%  (of valid stems)\n"
 tm$stage("targets")
 comp_div <- function(td, suf) {                                   # td = tree rows for one stratum
   if (!nrow(td)) return(data.table(Plot_ID = character(0)))
-  sp_ba <- td[, .(ba = sum(ba)), by = .(Plot_ID, sp)][, tot := sum(ba), by = Plot_ID][, p := ba/tot]
+  sp_ba <- td[, .(ba = sum(ba_w)), by = .(Plot_ID, sp)][, tot := sum(ba), by = Plot_ID][, p := ba/tot]
   div   <- sp_ba[, .(shannon = -sum(p*log(p)), richness = .N), by = Plot_ID]
   div[, evenness := fifelse(richness > 1, shannon/log(richness), NA_real_)]
   dom   <- sp_ba[order(-ba), .(domsp = sp[1L], dom_ba_share = max(p)), by = Plot_ID]
-  frac  <- td[, .(coniferfrac = sum(ba[is_conifer])/sum(ba),
-                  evergreenfrac = sum(ba[is_evergreen])/sum(ba),
-                  n_tree = .N, ba_tot = sum(ba)), by = Plot_ID]
+  frac  <- td[, .(coniferfrac = sum(ba_w[is_conifer])/sum(ba_w),
+                  evergreenfrac = sum(ba_w[is_evergreen])/sum(ba_w),
+                  n_tree = .N, ba_tot = sum(ba_w)), by = Plot_ID]
   out <- Reduce(function(a,b) merge(a,b,by="Plot_ID",all=TRUE), list(frac, div, dom))
   setnames(out, setdiff(names(out),"Plot_ID"), paste0(setdiff(names(out),"Plot_ID"), "_", suf))
   out

@@ -7,22 +7,23 @@ analyses with choices in them, namely the 200 m band edges, the value-class widt
 of nodata, so a reader has to be able to reproduce them. The manuscript states the method in one
 sentence and points here for the rest.
 
-All summaries are of the BASE tier, the primary configuration, and of the delivered rasters rather
-than of any intermediate. Every layer sits on the covar_5179 grid with 256 x 256 tiles, so the pass
-reads one tile stripe at a time. Reading single rows instead would decode each stripe once per row.
+All summaries are of the delivered rasters rather than of any intermediate. Every layer sits on the
+covariate grid with 256 x 256 tiles, so the pass reads one tile stripe at a time. Reading single rows
+instead would decode each stripe once per row. Each layer is read through its declared nodata, so a
+class map's nodata code and a float layer's NaN are both treated as absent.
 
 ⚠ These are descriptions of the mapped products. Elevation is itself a predictor, so an elevation
 gradient in the maps is not independent evidence about forests. The manuscript says so where it
 quotes them.
 
-INPUT   outputs/nfi8/m8_maps_30m/base_{conifer_fraction,biomass,shannon,dominant_species}_30m.tif
-        outputs/nfi8/m8_uncertainty_30m/base_{conifer_fraction_sd,biomass_sd,shannon_sd,dominant_species_uncertainty}_30m.tif
-        outputs/nfi8/index/imputation_base.tif · data/interim/covar_5179/T_ELE.tif
+INPUT   outputs/nfi8/m8_maps_30m/ftm_{conifer_fraction,biomass,shannon,dominant_species}_30m.tif
+        outputs/nfi8/m8_uncertainty_30m/ftm_{conifer_fraction_sd,biomass_sd,shannon_sd,dominant_species_uncertainty}_30m.tif
+        outputs/nfi8/index/imputation_ftm.tif · data/interim/covar_5179/T_ELE.tif
         data/species_codes.csv
-OUTPUT  outputs/nfi8/m8_map_summary_elevation.csv    (band means + cell counts)
-        outputs/nfi8/m8_map_summary_domsp_elev.csv   (dominant-species share per band)
-        outputs/nfi8/m8_map_summary_uncertainty.csv  (uncertainty by class of predicted value)
-        outputs/nfi8/m8_map_summary_plotuse.csv      (plot-index reference-library use)
+OUTPUT  outputs/nfi8/m8_map_summary_elevation_ftm.csv    (band means + cell counts)
+        outputs/nfi8/m8_map_summary_domsp_elev_ftm.csv   (dominant-species share per band)
+        outputs/nfi8/m8_map_summary_uncertainty_ftm.csv  (uncertainty by class of predicted value)
+        outputs/nfi8/m8_map_summary_plotuse_ftm.csv      (plot-index reference-library use)
 RUN     python pipeline/07l_map_summaries.py
 """
 import csv
@@ -35,15 +36,17 @@ import rasterio
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 OUT = os.path.join(ROOT, 'outputs', 'nfi8')
 MD, UN = os.path.join(OUT, 'm8_maps_30m'), os.path.join(OUT, 'm8_uncertainty_30m')
+TIER = 'ftm'                                         # the delivered file prefix (R/paths.R, FILE_TIER)
+SUF = '_' + TIER
 
 CONT = {
-    'coniferfrac': os.path.join(MD, 'base_conifer_fraction_30m.tif'),
-    'biomass':     os.path.join(MD, 'base_biomass_30m.tif'),
-    'shannon':     os.path.join(MD, 'base_shannon_30m.tif'),
-    'coniferfrac_sd': os.path.join(UN, 'base_conifer_fraction_sd_30m.tif'),
-    'biomass_sd':     os.path.join(UN, 'base_biomass_sd_30m.tif'),
-    'shannon_sd':     os.path.join(UN, 'base_shannon_sd_30m.tif'),
-    'domsp_uncertainty': os.path.join(UN, 'base_dominant_species_uncertainty_30m.tif'),
+    'coniferfrac': os.path.join(MD, f'{TIER}_conifer_fraction_30m.tif'),
+    'biomass':     os.path.join(MD, f'{TIER}_biomass_30m.tif'),
+    'shannon':     os.path.join(MD, f'{TIER}_shannon_30m.tif'),
+    'coniferfrac_sd': os.path.join(UN, f'{TIER}_conifer_fraction_sd_30m.tif'),
+    'biomass_sd':     os.path.join(UN, f'{TIER}_biomass_sd_30m.tif'),
+    'shannon_sd':     os.path.join(UN, f'{TIER}_shannon_sd_30m.tif'),
+    'domsp_uncertainty': os.path.join(UN, f'{TIER}_dominant_species_uncertainty_30m.tif'),
 }
 NAMES = list(CONT)
 ELE_EDGES = [200, 400, 600, 800]                     # 200 m bands; digitize gives 5 classes
@@ -51,8 +54,8 @@ ELE_LAB = ['<200', '200-400', '400-600', '600-800', '>800']
 STRIPE = 256
 
 src = {k: rasterio.open(v) for k, v in CONT.items()}
-domsp = rasterio.open(os.path.join(MD, 'base_dominant_species_30m.tif'))
-index = rasterio.open(os.path.join(OUT, 'index', 'imputation_base.tif'))
+domsp = rasterio.open(os.path.join(MD, f'{TIER}_dominant_species_30m.tif'))
+index = rasterio.open(os.path.join(OUT, 'index', f'imputation_{TIER}.tif'))
 elev = rasterio.open(os.path.join(ROOT, 'data', 'interim', 'covar_5179', 'T_ELE.tif'))
 H, W = src['coniferfrac'].shape
 for r in list(src.values()) + [domsp, index, elev]:
@@ -74,14 +77,14 @@ def add(key, v):
 
 for r0 in range(0, H, STRIPE):
     win = rasterio.windows.Window(0, r0, W, min(STRIPE, H - r0))
-    cf = src['coniferfrac'].read(1, window=win)
+    cf = src['coniferfrac'].read(1, window=win, masked=True).filled(np.nan)   # declared nodata -> NaN
     ok = np.isfinite(cf)                             # the forest footprint, identical in every layer
     if not ok.any():
         continue
     band = np.digitize(elev.read(1, window=win), ELE_EDGES)
     vals = {}
     for name in NAMES:
-        v = src[name].read(1, window=win).astype('float32')
+        v = src[name].read(1, window=win, masked=True).astype('float32').filled(np.nan)
         v[~ok] = np.nan
         vals[name] = v
         for b in range(len(ELE_LAB)):
@@ -106,7 +109,7 @@ for r0 in range(0, H, STRIPE):
             u, n = np.unique(ds[m], return_counts=True)
             for uu, nn in zip(u.tolist(), n.tolist()):
                 c[uu] = c.get(uu, 0) + nn
-    ix = index.read(1, window=win)
+    ix = index.read(1, window=win, masked=True).astype('float64').filled(np.nan)
     mi = np.isfinite(ix)
     if mi.any():
         u, n = np.unique(ix[mi].astype('int32'), return_counts=True)
@@ -117,6 +120,7 @@ for r0 in range(0, H, STRIPE):
 
 
 def w(name, header, rows):
+    name = name.replace('.csv', SUF + '.csv')
     p = os.path.join(OUT, name)
     with io.open(p, 'w', encoding='utf-8', newline='') as f:
         cw = csv.writer(f)
@@ -147,7 +151,8 @@ w('m8_map_summary_domsp_elev.csv', ['elevation_band_m', 'code', 'sci_name', 'cel
 
 rows = [['coniferfrac', '%.1f-%.1f' % (b / 10, (b + 1) / 10), round(s[0] / s[1], 4), s[1]]
         for b, s in sorted(cf_class.items())]
-rows += [['biomass_Mgha', '%d-%d' % (b * 50, (b + 1) * 50), round(s[0] / s[1], 2), s[1]]
+# the top class is open-ended: clip() folds every value of 250 Mg/ha and above into it
+rows += [['biomass_Mgha', ('%d-%d' % (b * 50, (b + 1) * 50)) if b < 5 else '>=250', round(s[0] / s[1], 2), s[1]]
          for b, s in sorted(bio_class.items())]
 w('m8_map_summary_uncertainty.csv', ['attribute', 'predicted_value_class', 'mean_uncertainty', 'cells'], rows)
 

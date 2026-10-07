@@ -3,9 +3,10 @@ message: "If you use this software, please cite the dataset it produced."
 title: "Code for: Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025)"
 abstract: >-
   R and Python pipeline that produces a nationwide 30 m dataset of four forest attributes for South
-  Korea from Korean National Forest Inventory plots and Sentinel-2, by direct random-forest
-  prediction and by plot-index nearest-neighbour imputation.
+  Korea from Korean National Forest Inventory plots, Sentinel-2, climate, terrain and the national
+  forest-type map, by direct random-forest prediction and by plot-index nearest-neighbour imputation.
 type: software
+version: "2.0"
 license: MIT
 repository-code: "https://github.com/kim-seunguk/korea-forest-attribute-maps"
 authors:
@@ -24,7 +25,10 @@ authors:
 references:
   - type: data
     title: "Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025) from direct prediction and plot-index imputation"
-    doi: "10.5281/zenodo.21701424"
+    version: "2.0"
+    # TODO: this is the concept DOI, which resolves to the newest version; replace it with the
+    # version 2 DOI once that record is published. Version 1 is 10.5281/zenodo.21701424.
+    doi: "10.5281/zenodo.21701423"
     year: 2026
     authors:
       - family-names: Kim

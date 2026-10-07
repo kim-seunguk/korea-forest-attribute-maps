@@ -1,0 +1,13 @@
+route,target,metric,n,unweighted,weighted
+direct,Bio_a_ha,r2,13013,0.3131,0.3281
+direct,coniferfrac_full,r2,13023,0.7197,0.7221
+direct,domsp_full,accuracy,13023,0.5224,0.5347
+direct,shannon_full,r2,13023,0.3217,0.3312
+imputation,Bio_a_ha,r2,13005,-0.292,-0.2861
+imputation,coniferfrac_full,r2,13023,0.4792,0.4827
+imputation,domsp_full,accuracy,13023,0.4234,0.4347
+imputation,domsp_raw,accuracy,13023,0.419,0.4316
+imputation,fld_V_DC,accuracy,13023,0.467,0.4655
+imputation,fld_V_DN,accuracy,13023,0.8231,0.8211
+imputation,fld_V_VG,accuracy,13023,0.4567,0.4614
+imputation,shannon_full,r2,13023,-0.2712,-0.2557

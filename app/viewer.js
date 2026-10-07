@@ -1,8 +1,8 @@
 /**
  * Korea forest attribute maps — Earth Engine viewer.
  *
- * Two linked maps under a wipe, so the two product families, the two predictor sets and a map
- * against its own uncertainty can be put side by side at the same place and zoom. Clicking reads
+ * Two linked maps under a wipe, so the two product families, or a map and its own uncertainty
+ * layer, can be put side by side at the same place and zoom. Clicking reads
  * every published layer at that cell in one request. Controls sit in a panel beside the maps, where
  * the wipe cannot cover them.
  *
@@ -123,7 +123,8 @@ var UI_TEXT = {
     'header.author_short': 'Seunguk Kim, SNU',
     'info.author': 'Seunguk Kim, Seoul National University',
     'info.description': 'Four forest attributes over South Korea at 30 m, from the 8th National ' +
-      'Forest Inventory (2021–2025), mapped two ways under two predictor sets.',
+      'Forest Inventory (2021–2025), mapped two ways from Sentinel-2, climate, terrain and the ' +
+      'national forest-type map.',
     'info.data_link': 'Data (CC BY 4.0)',
     'info.code_link': 'Code (MIT)',
     'info.notes_toggle': 'What to know before using these',
@@ -133,13 +134,10 @@ var UI_TEXT = {
     'layout.left_only': 'Left map only',
     'layout.right_only': 'Right map only',
     'settings.family': 'Product family',
-    'settings.tier': 'Predictor tier',
     'settings.quantity': 'Quantity',
     'family.direct': 'Direct prediction',
     'family.imputation': 'Plot-index imputation',
     'family.basemap': 'Basemap only',
-    'tier.base': 'Base (satellite, climate, terrain)',
-    'tier.ftm': 'FTM-added (+ forest-type map)',
     'quantity.conifer_fraction': 'Coniferous fraction',
     'quantity.dominant_species': 'Dominant species',
     'quantity.biomass': 'Aboveground biomass',
@@ -164,7 +162,7 @@ var UI_TEXT = {
     'basemap.labels': 'Show labels',
     'location.button': 'Show my location',
     'location.layer': 'Current location',
-    'legend.species_others': 'Others (25 species, 2 % of area)',
+    'legend.species_others': 'Others (23 species, 5 % of area)',
     'legend.plot_index': 'colours repeat; they mark where the matched plot changes',
     'range.pooled_p5_p95': 'p5-p95 pooled over every layer carrying this band',
     'range.definitional': 'definitional',
@@ -180,7 +178,6 @@ var UI_TEXT = {
     'readout.loading': 'reading…',
     'readout.no_data': 'no data here',
     'readout.outside_extent': 'outside the mapped forest extent',
-    'readout.tier_note': 'Base / FTM-added; one value means both tiers agree.',
     'readout.unknown_species': 'Unknown species',
     'readout.other_species': 'Others (pooled)',
     'readout.conifer_fraction': 'Coniferous fraction',
@@ -194,12 +191,10 @@ var UI_TEXT = {
     'readout.distance': 'Distance',
     'coordinate.north': 'N',
     'coordinate.east': 'E',
-    'note.ftm': 'FTM-added is the more accurate configuration for use in South Korea. Base drops ' +
-      'the forest-type map so the method can travel, and it is the one to read near the northern ' +
-      'border, where the national map stops.',
     'note.spatial_pattern': 'Read these as broad spatial patterns, not as field values for a 30 m cell.',
-    'note.performance': 'Coniferous fraction maps well. Biomass and tree-species diversity are much ' +
-      'weaker, and for those two the plot-index family scores below a mean predictor, so prefer the ' +
+    'note.performance': 'Coniferous fraction and dominant species can be read cell by cell. Biomass ' +
+      'and tree-species diversity are much weaker at a single cell and are meant to be read at 1 km ' +
+      'or coarser; for those two the plot-index family scores below a mean predictor, so prefer the ' +
       'direct maps there.',
     'note.uncertainty': 'The uncertainty layers rank relative confidence, and the nearest-reference ' +
       'distance says how unlike the cell its matched plot was. Neither is a prediction interval.',
@@ -214,7 +209,7 @@ var UI_TEXT = {
     'header.title': '한국산림공간정보',
     'header.author_short': '김승욱, 서울대학교',
     'info.author': '김승욱, 서울대학교',
-    'info.description': '제8차 국가산림자원조사(2021–2025)를 바탕으로, 2종류의 예측변수 구성과 ' +
+    'info.description': '제8차 국가산림자원조사(2021–2025)와 Sentinel-2·기후·지형·임상도를 바탕으로, ' +
       '2종류의 산출 방식으로 제작한 대한민국 전역 30 m 해상도의 산림 속성 지도입니다.',
     'info.data_link': '데이터 (CC BY 4.0)',
     'info.code_link': '코드 (MIT)',
@@ -225,13 +220,10 @@ var UI_TEXT = {
     'layout.left_only': '왼쪽 지도만',
     'layout.right_only': '오른쪽 지도만',
     'settings.family': '지도 산출 방식',
-    'settings.tier': '예측변수 구성',
     'settings.quantity': '표시 항목',
     'family.direct': '직접 예측',
     'family.imputation': '표본점번호 할당',
     'family.basemap': '배경지도만',
-    'tier.base': '기본 (위성·기후·지형)',
-    'tier.ftm': '임상도 추가',
     'quantity.conifer_fraction': '침엽수 비율',
     'quantity.dominant_species': '우점 수종',
     'quantity.biomass': '지상부 바이오매스',
@@ -256,7 +248,7 @@ var UI_TEXT = {
     'basemap.labels': '라벨 표시',
     'location.button': '현재 위치 보기',
     'location.layer': '현재 위치',
-    'legend.species_others': '기타 수종 (25종, 전체 면적의 2%)',
+    'legend.species_others': '기타 수종 (23종, 전체 면적의 5%)',
     'legend.plot_index': '색상은 할당된 표본점의 번호를 나타냅니다. 색상 표현에는 중복이 있습니다.',
     'range.pooled_p5_p95': '이 밴드를 포함하는 모든 레이어를 통합한 p5–p95',
     'range.definitional': '정의에 따른 범위',
@@ -272,9 +264,8 @@ var UI_TEXT = {
     'readout.loading': '불러오는 중…',
     'readout.no_data': '이 위치에는 데이터가 없습니다.',
     'readout.outside_extent': '산림 지도 범위 밖입니다.',
-    'readout.tier_note': '기본 데이터셋 / 임상도 추가 시의 값이며, 두 구성의 값이 같으면 하나만 표시합니다.',
     'readout.unknown_species': '알 수 없는 수종',
-    'readout.other_species': '주요 38종 외 기타 수종',
+    'readout.other_species': '주요 36종 외 기타 수종',
     'readout.conifer_fraction': '침엽수 비율',
     'readout.biomass': '지상부 바이오매스 (Mg ha⁻¹)',
     'readout.shannon': '수종 다양성 (Shannon H′)',
@@ -286,14 +277,11 @@ var UI_TEXT = {
     'readout.distance': '거리',
     'coordinate.north': '북위',
     'coordinate.east': '동경',
-    'note.ftm': '대한민국에서는 임상도를 추가한 예측모형이 더 정확합니다. 기본 데이터셋은 다른 ' +
-      '지역에도 방법을 적용할 수 있도록 임상도를 제외한 구성입니다. 임상도가 제공되지 않는 ' +
-      '지역(DMZ 부근 등)에서는 기본 지도를 참고하세요.',
     'note.spatial_pattern': '이 정보는 30m 해상도의 현장 실측값이 아닙니다. 광역적인 공간 ' +
       '패턴으로 해석하세요. 제작자는 현장 오류에 대한 모든 연락을 환영합니다.',
-    'note.performance': '침엽수 비율은 비교적 잘 지도화됩니다. 바이오매스와 수종 다양성은 ' +
-      '성능이 훨씬 낮습니다. 이 두 속성에서는 표본점 할당 방식의 성능이 매우 낮으므로 직접 ' +
-      '예측 지도를 우선으로 사용하세요.',
+    'note.performance': '침엽수 비율과 우점 수종은 셀 단위로 읽을 수 있습니다. 바이오매스와 수종 ' +
+      '다양성은 셀 단위 성능이 훨씬 낮으므로 1 km 이상으로 집계하여 읽도록 만들어졌습니다. 이 두 ' +
+      '속성에서는 표본점 할당 방식의 성능이 매우 낮으므로 직접 예측 지도를 우선으로 사용하세요.',
     'note.uncertainty': '불확실성 레이어는 상대적인 신뢰도를 나타내며, 최근접 참조 거리는 해당 ' +
       '지점이 할당된 표본점과 얼마나 다른지를 나타냅니다. 둘 다 예측구간은 아닙니다.',
     'note.dominant_species': '우점 수종 정확도는 흔한 수종에 집중되어 있습니다. (희소한 수종일수록 ' +
@@ -352,21 +340,23 @@ function internalOption(display, values, ids) {
   return display;
 }
 
-var COLLECTION = 'projects/ee-korea-forest-maps/assets/korea-forest-attributes';
-var PLOT_IDS = {base: ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_base'),
-                ftm: ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_ftm')};
+// Version 2 of the dataset: its own collection and plot-id table. The version 1 assets stay online
+// under their own names and are not read here.
+var COLLECTION = 'projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2';
+var PLOT_IDS = ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_ftm_v2');
 
+// TODO: replace with the version 2 DOI before deploying. DOI_CONCEPT resolves to the newest version.
 var DOI = 'https://doi.org/10.5281/zenodo.21701424';
+var DOI_CONCEPT = '10.5281/zenodo.21701423';
 var CODE = 'https://github.com/kim-seunguk/korea-forest-attribute-maps';
 
 // ---- what can be shown ------------------------------------------------------------------------
-// A layer is a family, a predictor set and a quantity. The asset name follows from those three.
+// A layer is a family and a quantity. The asset name follows from those two.
 var FAMILY = {
   'Direct prediction': 'direct',
   'Plot-index imputation': 'imputation',
   'Basemap only': null
 };
-var TIER = {'Base (satellite, climate, terrain)': 'base', 'FTM-added (+ forest-type map)': 'ftm'};
 
 var QUANTITY = {
   direct: {
@@ -393,10 +383,6 @@ var FAMILY_TEXT = {
   'Direct prediction': 'family.direct',
   'Plot-index imputation': 'family.imputation',
   'Basemap only': 'family.basemap'
-};
-var TIER_TEXT = {
-  'Base (satellite, climate, terrain)': 'tier.base',
-  'FTM-added (+ forest-type map)': 'tier.ftm'
 };
 var QUANTITY_TEXT = {
   'Coniferous fraction': 'quantity.conifer_fraction',
@@ -437,17 +423,20 @@ function visCaption(band) {
          translatedMetadata(v.range_from || '', VIS_RANGE_TEXT);
 }
 
-/** Asset id for a (family, tier, band). */
-function assetId(family, tier, band) {
+// The deposited file names carry the token of the predictor set they were made with.
+var PREDICTOR_SET = 'ftm';
+
+/** Asset id for a (family, band). */
+function assetId(family, band) {
   var stem;
   if (band === 'plot_index') {
-    stem = 'imputation_' + tier;
+    stem = 'imputation_' + PREDICTOR_SET;
   } else if (band === 'nearest_reference_distance') {
-    stem = 'nearest_reference_distance_' + tier;
+    stem = 'nearest_reference_distance_' + PREDICTOR_SET;
   } else if (family === 'imputation') {
-    stem = 'imputed_' + tier + '_' + band + '_30m';
+    stem = 'imputed_' + PREDICTOR_SET + '_' + band + '_30m';
   } else {
-    stem = tier + '_' + band + '_30m';
+    stem = PREDICTOR_SET + '_' + band + '_30m';
   }
   return COLLECTION + '/' + stem;
 }
@@ -478,13 +467,13 @@ function isUncertainty(band) {
 }
 
 /** Rendered image plus the legend it needs. */
-function styled(family, tier, band) {
-  var img = ee.Image(assetId(family, tier, band));
+function styled(family, band) {
+  var img = ee.Image(assetId(family, band));
   if (band === 'dominant_species') {
     return {image: img.visualize({min: 0, max: 38, palette: SPECIES}), kind: 'species'};
   }
   if (band === 'plot_index') {
-    // The index runs to about fifteen thousand and its value carries no order, so a ramp over it
+    // The index runs to 15,999 and its value carries no order, so a ramp over it
     // would be meaningless. Colouring by the remainder shows where the matched plot changes, which
     // is the thing worth seeing: the mosaic of donor plots.
     return {image: img.mod(11).visualize({min: 0, max: 10, palette: MOSAIC.concat(MOSAIC)}),
@@ -710,22 +699,15 @@ function side(map, defaults) {
   var state = {
     map: map,
     family: defaults.family,
-    tier: defaults.tier,
     quantity: defaults.quantity,
     wantedQuantity: defaults.quantity,
     spec: null,
     syncing: false
   };
   var familyNames = Object.keys(FAMILY);
-  var tierNames = Object.keys(TIER);
   var familySel = ui.Select({
     items: translatedOptions(familyNames, FAMILY_TEXT),
     value: translatedOption(defaults.family, FAMILY_TEXT),
-    style: {width: '240px'}
-  });
-  var tierSel = ui.Select({
-    items: translatedOptions(tierNames, TIER_TEXT),
-    value: translatedOption(defaults.tier, TIER_TEXT),
     style: {width: '240px'}
   });
   var quantSel = ui.Select({items: [], value: null, style: {width: '240px'}});
@@ -742,8 +724,6 @@ function side(map, defaults) {
     state.syncing = true;
     familySel.items().reset(translatedOptions(familyNames, FAMILY_TEXT));
     familySel.setValue(translatedOption(state.family, FAMILY_TEXT), false);
-    tierSel.items().reset(translatedOptions(tierNames, TIER_TEXT));
-    tierSel.setValue(translatedOption(state.tier, TIER_TEXT), false);
     quantSel.items().reset(translatedOptions(names, QUANTITY_TEXT));
     if (names.length) {
       quantSel.setValue(translatedOption(state.quantity, QUANTITY_TEXT), false);
@@ -753,7 +733,6 @@ function side(map, defaults) {
 
   function refresh() {
     var family = FAMILY[state.family];
-    var tier = TIER[state.tier];
     var band = family && QUANTITY[family][state.quantity];
     if (!band) {
       map.layers().reset(appendCurrentLocationLayer([]));
@@ -762,7 +741,7 @@ function side(map, defaults) {
       state.spec = null;
       return;
     }
-    var spec = styled(family, tier, band);
+    var spec = styled(family, band);
     state.spec = spec;
     map.layers().reset(appendCurrentLocationLayer([
       ui.Map.Layer(spec.image, {}, translatedOption(state.quantity, QUANTITY_TEXT))
@@ -780,12 +759,6 @@ function side(map, defaults) {
     } else {
       state.quantity = null;
     }
-    syncDesktopSelectors();
-    refresh();
-  };
-
-  state.setTier = function (label) {
-    state.tier = label;
     syncDesktopSelectors();
     refresh();
   };
@@ -808,9 +781,6 @@ function side(map, defaults) {
   familySel.onChange(function (label) {
     if (!state.syncing) { state.setFamily(internalOption(label, familyNames, FAMILY_TEXT)); }
   });
-  tierSel.onChange(function (label) {
-    if (!state.syncing) { state.setTier(internalOption(label, tierNames, TIER_TEXT)); }
-  });
   quantSel.onChange(function (label) {
     if (!state.syncing) {
       state.setQuantity(internalOption(label, quantityNames(), QUANTITY_TEXT));
@@ -819,7 +789,7 @@ function side(map, defaults) {
 
   var title = localizedLabel(defaults.titleKey,
                              {fontWeight: 'bold', fontSize: '13px', margin: '0 0 3px 0'});
-  state.panel = ui.Panel([title, familySel, tierSel, quantSel, legendHolder, caption],
+  state.panel = ui.Panel([title, familySel, quantSel, legendHolder, caption],
                          ui.Panel.Layout.flow('vertical'),
                          {margin: '0 0 16px 0', width: '278px'});
   syncDesktopSelectors();
@@ -828,16 +798,13 @@ function side(map, defaults) {
 }
 
 // ---- click: read every layer at one cell, in one request --------------------------------------
-/** Every published band, named family_tier_band, as a single image. */
+/** Every published band, named family_band, as a single image. */
 function fullStack() {
   var bands = [];
   ['direct', 'imputation'].forEach(function (family) {
-    ['base', 'ftm'].forEach(function (tier) {
-      Object.keys(QUANTITY[family]).forEach(function (label) {
-        var band = QUANTITY[family][label];
-        bands.push(ee.Image(assetId(family, tier, band))
-                   .rename(family + '_' + tier + '_' + band));
-      });
+    Object.keys(QUANTITY[family]).forEach(function (label) {
+      var band = QUANTITY[family][label];
+      bands.push(ee.Image(assetId(family, band)).rename(family + '_' + band));
     });
   });
   return ee.Image.cat(bands);
@@ -874,23 +841,15 @@ function fmt(v, digits) {
   return (v === null || v === undefined) ? '—' : Number(v).toFixed(digits);
 }
 
-function tierReadoutValue(basePart, ftmPart, highlightFtm) {
-  function copy(part, highlight) {
-    return {text: part.text, italic: part.italic || false, highlight: highlight || false};
-  }
-  if (basePart.text === ftmPart.text && basePart.italic === ftmPart.italic) {
-    return {text: basePart.text, parts: [copy(basePart, highlightFtm)]};
-  }
-  return {
-    text: basePart.text + ' / ' + ftmPart.text,
-    parts: [copy(basePart, false), {text: '/', italic: false, separator: true},
-            copy(ftmPart, highlightFtm)]
-  };
+/** One readout value in the form readoutCard renders: the text, italics for a scientific name, and
+ *  a highlight on the family whose value is the one to read for that attribute. */
+function readoutValue(part, highlight) {
+  return {text: part.text,
+          parts: [{text: part.text, italic: part.italic || false, highlight: highlight || false}]};
 }
 
-function numericTierValue(baseValue, ftmValue, show, highlightFtm) {
-  return tierReadoutValue({text: show(baseValue), italic: false},
-                          {text: show(ftmValue), italic: false}, highlightFtm);
+function numericValue(value, show, highlight) {
+  return readoutValue({text: show(value), italic: false}, highlight);
 }
 
 function readoutCard(title, items, mobile) {
@@ -949,10 +908,8 @@ function speciesReadoutPart(value) {
     {text: SPECIES_NAME[code], italic: true};
 }
 
-function speciesTierValue(baseValue, ftmValue, highlightFtm) {
-  var base = speciesReadoutPart(baseValue);
-  var ftm = speciesReadoutPart(ftmValue);
-  return tierReadoutValue(base, ftm, highlightFtm);
+function speciesValue(value, highlight) {
+  return readoutValue(speciesReadoutPart(value), highlight);
 }
 
 function onClick(pt) {
@@ -973,11 +930,6 @@ function onClick(pt) {
         return;
       }
 
-      /** The two tiers of one quantity: one value if they agree, both if they differ. */
-      function tiers(prefix, band, show) {
-        var a = show(v[prefix + '_base_' + band]), b = show(v[prefix + '_ftm_' + band]);
-        return a === b ? a : a + ' / ' + b;
-      }
       var any = false;
       var attributeValues = [];
       var attributeLabels = {
@@ -986,46 +938,39 @@ function onClick(pt) {
         shannon: 'readout.shannon',
         dominant_species: 'readout.dominant_species'
       };
+      // One value per attribute is highlighted: the direct prediction for the three continuous
+      // attributes, the matched plot's species for dominant species.
       ['conifer_fraction', 'biomass', 'shannon', 'dominant_species'].forEach(function (band) {
         var species = band === 'dominant_species';
-        var highlightDirectFtm = !species;
-        var highlightImputedFtm = species;
         var d, i;
         if (species) {
-          d = speciesTierValue(v['direct_base_' + band], v['direct_ftm_' + band],
-                               highlightDirectFtm);
-          i = speciesTierValue(v['imputation_base_' + band], v['imputation_ftm_' + band],
-                               highlightImputedFtm);
+          d = speciesValue(v['direct_' + band], false);
+          i = speciesValue(v['imputation_' + band], true);
         } else {
           var show = function (x) { return fmt(x, band === 'biomass' ? 1 : 3); };
-          d = numericTierValue(v['direct_base_' + band], v['direct_ftm_' + band], show,
-                               highlightDirectFtm);
-          i = numericTierValue(v['imputation_base_' + band], v['imputation_ftm_' + band], show,
-                               highlightImputedFtm);
+          d = numericValue(v['direct_' + band], show, true);
+          i = numericValue(v['imputation_' + band], show, false);
         }
         if (d.text === '\u2014' && i.text === '\u2014') { return; }
         any = true;
         attributeValues.push({title: tr(attributeLabels[band]), direct: d, imputed: i});
       });
 
-      var dist = tiers('imputation', 'nearest_reference_distance', function (x) { return fmt(x, 3); });
-      var ib = v['imputation_base_plot_index'], ifm = v['imputation_ftm_plot_index'];
-      var hasPlot = ib !== null || ifm !== null;
+      var dist = fmt(v['imputation_nearest_reference_distance'], 3);
+      var plotIndex = v['imputation_plot_index'];
+      var hasPlot = plotIndex !== null && plotIndex !== undefined;
       var plotLabels = [];
 
       READOUTS.forEach(function (panel) {
         var mobile = panel === mobileReadout;
         var bodyFont = mobile ? MOBILE_BODY_FONT_SIZE : '13px';
-        var smallFont = mobile ? MOBILE_SMALL_FONT_SIZE : '12px';
         var coordinates = currentLanguage === 'ko' ?
           tr('coordinate.north') + ' ' + fmt(pt.lat, 5) + '°,  ' +
           tr('coordinate.east') + ' ' + fmt(pt.lon, 5) + '°' :
           fmt(pt.lat, 5) + ' N,  ' + fmt(pt.lon, 5) + ' E';
         var rows = [ui.Label(coordinates,
                              {fontSize: mobile ? MOBILE_TITLE_FONT_SIZE : '14px',
-                              fontWeight: 'bold', margin: '0 0 2px 0'}),
-                    ui.Label(tr('readout.tier_note'),
-                             {fontSize: smallFont, color: '#555', margin: '0 0 8px 0'})];
+                              fontWeight: 'bold', margin: '0 0 8px 0'})];
         attributeValues.forEach(function (attribute) {
           rows.push(readoutCard(attribute.title, [
             {key: tr('readout.direct'), value: attribute.direct.text, parts: attribute.direct.parts},
@@ -1047,14 +992,10 @@ function onClick(pt) {
       });
 
       if (hasPlot) {
-        var ids = ['base', 'ftm'].map(function (t) {
-          var idx = v['imputation_' + t + '_plot_index'];
-          return (idx === null || idx === undefined) ? ee.String('\u2014')
-            : ee.String(PLOT_IDS[t].filter(ee.Filter.eq('plot_index', Math.round(idx)))
-                        .first().get('nfi_plot_id'));
-        });
-        ee.List(ids).evaluate(function (got) {
-          var name = (got && got[0] === got[1]) ? got[0] : (got[0] + ' / ' + got[1]);
+        var id = ee.String(PLOT_IDS.filter(ee.Filter.eq('plot_index', Math.round(plotIndex)))
+                           .first().get('nfi_plot_id'));
+        id.evaluate(function (got) {
+          var name = (got === null || got === undefined) ? '\u2014' : String(got);
           plotLabels.forEach(function (lab) {
             lab.setValue(name);
           });
@@ -1179,7 +1120,6 @@ function syncLayoutSelector() {
 
 // ---- what a reader has to know before believing any of it --------------------------------------
 var NOTE_IDS = [
-  'note.ftm',
   'note.spatial_pattern',
   'note.performance',
   'note.uncertainty',
@@ -1253,10 +1193,10 @@ var mobileInfo = makeInfoPanel(true);
 // ---- responsive layout -------------------------------------------------------------------------
 // Desktop keeps the original fixed sidebars and wipe. Mobile uses separate controls and content
 // panels, so no selector, legend or readout widget ever has two parents.
-var leftSide = side(leftMap, {family: 'Direct prediction', tier: 'FTM-added (+ forest-type map)',
-                              quantity: 'Aboveground biomass', titleKey: 'map.left_title'});
-var rightSide = side(rightMap, {family: 'Plot-index imputation', tier: 'FTM-added (+ forest-type map)',
-                                quantity: 'Dominant species', titleKey: 'map.right_title'});
+var leftSide = side(leftMap, {family: 'Direct prediction', quantity: 'Aboveground biomass',
+                              titleKey: 'map.left_title'});
+var rightSide = side(rightMap, {family: 'Plot-index imputation', quantity: 'Dominant species',
+                                titleKey: 'map.right_title'});
 var sideStates = [leftSide, rightSide];
 var mobileSide = rightSide;
 
@@ -1285,10 +1225,6 @@ var mobileFamilySel = ui.Select({
   items: translatedOptions(Object.keys(FAMILY), FAMILY_TEXT),
   style: {stretch: 'horizontal', fontSize: MOBILE_BODY_FONT_SIZE}
 });
-var mobileTierSel = ui.Select({
-  items: translatedOptions(Object.keys(TIER), TIER_TEXT),
-  style: {stretch: 'horizontal', fontSize: MOBILE_BODY_FONT_SIZE}
-});
 var mobileQuantSel = ui.Select({
   items: [], style: {stretch: 'horizontal', fontSize: MOBILE_BODY_FONT_SIZE}
 });
@@ -1307,8 +1243,6 @@ function syncMobileControls() {
   mobileControlSync = true;
   mobileFamilySel.items().reset(translatedOptions(Object.keys(FAMILY), FAMILY_TEXT));
   mobileFamilySel.setValue(translatedOption(state.family, FAMILY_TEXT), false);
-  mobileTierSel.items().reset(translatedOptions(Object.keys(TIER), TIER_TEXT));
-  mobileTierSel.setValue(translatedOption(state.tier, TIER_TEXT), false);
   mobileQuantSel.items().reset(translatedOptions(names, QUANTITY_TEXT));
   if (names.length) {
     mobileQuantSel.setValue(translatedOption(state.quantity, QUANTITY_TEXT), false);
@@ -1323,12 +1257,6 @@ mobileFamilySel.onChange(function (label) {
     syncMobileControls();
   }
 });
-mobileTierSel.onChange(function (label) {
-  if (!mobileControlSync) {
-    mobileSide.setTier(internalOption(label, Object.keys(TIER), TIER_TEXT));
-    syncMobileControls();
-  }
-});
 mobileQuantSel.onChange(function (label) {
   if (!mobileControlSync) {
     mobileSide.setQuantity(internalOption(label, mobileSide.quantityNames(), QUANTITY_TEXT));
@@ -1340,9 +1268,6 @@ var mobileSettingsBody = ui.Panel([
   localizedLabel('settings.family',
                  {fontSize: MOBILE_SMALL_FONT_SIZE, color: '#555', margin: '0'}),
   mobileFamilySel,
-  localizedLabel('settings.tier',
-                 {fontSize: MOBILE_SMALL_FONT_SIZE, color: '#555', margin: '8px 0 0 0'}),
-  mobileTierSel,
   localizedLabel('settings.quantity',
                  {fontSize: MOBILE_SMALL_FONT_SIZE, color: '#555', margin: '8px 0 0 0'}),
   mobileQuantSel,

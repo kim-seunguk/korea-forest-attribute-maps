@@ -3,8 +3,8 @@
 # Reads data/species_colors.csv, which gives a colour to each species named in the map figures'
 # legends. The rest collapse into a single "Others" class, drawn in the CSV's last colour.
 #
-# This is figure symbology. The delivered rasters carry class codes and no colour table, so a GIS
-# applies its own until a user picks one.
+# This is figure symbology, and the same table is embedded in the delivered dominant-species raster
+# as its internal colour table (06d), so a GIS colours that map on open with these colours.
 #
 #   source(here::here("figures", "species_palette.R"))
 #

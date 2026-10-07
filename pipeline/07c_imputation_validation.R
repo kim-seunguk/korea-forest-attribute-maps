@@ -21,17 +21,13 @@
 # roughly doubles the variance of the estimate. That is the cost of returning a set of attributes
 # that occurred together on one real plot.
 #
-#   IMPUTE_TIER <- "base"   # omit for the default "full"
 #   source(here::here("pipeline", "07c_imputation_validation.R"))
 # ================================================================================================
 suppressPackageStartupMessages({ library(here); library(terra); library(data.table); library(sf) })
 source(here::here("R","paths.R")); source(here::here("R","eval_utils.R"))   # r2(), nir()
-# Which delivered raster to validate; mirrors 05b and 05c.
-#   full -> imputation_ftm.tif    base -> imputation_base.tif
-if (!exists("IMPUTE_TIER")) IMPUTE_TIER <- "full"; stopifnot(IMPUTE_TIER %in% c("base", "full"))
-.tsuf     <- tier_suffix(IMPUTE_TIER)                       # "_base" | "_ftm"; see R/paths.R
-.m4c_pred <- if (IMPUTE_TIER == "base") "clim_s2med" else "full"
-.tier_lab <- if (IMPUTE_TIER == "base") "base(S2)" else "full(S2+FTM)"
+# The delivered raster, imputation_ftm.tif, built by 05b from the predictor set 07b calls "full".
+.tsuf     <- tier_suffix("full")                            # "_ftm"; see R/paths.R
+.m4c_pred <- "full"
 outd    <- here("outputs", VERSION)
 idx_tif <- require_file(file.path(outd, "index",  sprintf("imputation%s.tif", .tsuf)))
 ref_csv <- require_file(file.path(outd, "models", sprintf("train_reference%s.csv", .tsuf)))
@@ -45,9 +41,11 @@ rd    <- fread(require_file(here("data","interim",VERSION,"rd_points.csv")), enc
 ref   <- fread(ref_csv, encoding="UTF-8", colClasses=list(character="Plot_ID"))   # plot_idx (1..N) -> matched Plot_ID
 setorder(ref, plot_idx); stopifnot(ref$plot_idx == seq_len(nrow(ref)))            # index raster value == row order
 
-# domsp coding IDENTICAL to the direct-map validation (delivered legend = 39 merged classes; two regional pine
-# races -> 소나무; anything outside the mapped set -> 기타) so imputation & direct-map accuracies are comparable.
-leg <- fread(here("data","species_codes.csv"), encoding="UTF-8")
+# domsp coding IDENTICAL to the direct-map validation: the classes the delivered map trained (05a's
+# legend_used, the legend with the rare species already pooled), two regional pine races -> 소나무,
+# anything outside the trained set -> 기타, so imputation & direct-map accuracies are comparable.
+leg_f <- file.path(outd, "m8_maps_30m", "m8_domsp_legend_used.csv")
+leg <- fread(if (file.exists(leg_f)) leg_f else here("data","species_codes.csv"), encoding="UTF-8")
 SP_SET <- unique(leg$species)
 code_domsp <- function(x) { x <- enc2utf8(as.character(x))
   x[x %in% c("강원지방소나무","중부지방소나무")] <- "소나무"; x[!(x %in% SP_SET)] <- "기타"; x }
@@ -96,7 +94,7 @@ score <- function(v, lab) {
                sum(is.finite(v$shannon)&is.finite(v$imp_shannon)),
                sum(is.finite(v$Bio_a_ha)&is.finite(v$imp_Bio_a_ha)),
                sum(!is.na(v$imp_domsp)&!is.na(v$domsp)))]
-  res[, `:=`(tier=.tier_lab, route="impute-raster", plots=lab)]
+  res[, `:=`(tier="ftm", route="impute-raster", plots=lab)]
   res[]
 }
 res <- rbindlist(list(score(obs[hit], "all held-out"),
@@ -106,11 +104,11 @@ fwrite(obs, file.path(outd, sprintf("imputation_test_pred%s.csv", .tsuf)), bom=T
 fwrite(res, file.path(outd, sprintf("imputation_map_validation%s.csv", .tsuf)))        # metrics
 cat("\n===== delivered imputation, sampled at the disjoint test plots =====\n"); print(res)
 
-## --- reconcile against the 07b plot-vector scores (test scheme, full tier) --------------------
+## --- reconcile against the 07b plot-vector scores (test scheme, the delivered set) ------------
 m4c_f <- file.path(outd, "m4c_dualtrack.csv")
 if (file.exists(m4c_f)) {
   key <- c(coniferfrac_full="coniferfrac", shannon_full="shannon", Bio_a_ha="Bio_a_ha", domsp_full="domsp")
-  m4c <- fread(m4c_f)[scheme=="test" & stratum=="full" & predset==.m4c_pred, .(target, m4c_plotvec=point)]
+  m4c <- fread(m4c_f)[scheme=="test" & stratum=="full" & predset==.m4c_pred & target %in% names(key), .(target, m4c_plotvec=point)]
   m4c[, target := key[target]]
   # Compare against the self-match-excluded block. 07b holds its test plots out of the model, so
   # only the block that also excludes them is measuring a comparable thing.
@@ -119,7 +117,7 @@ if (file.exists(m4c_f)) {
   cat(sprintf("\n----- delivered raster, self-matches excluded  vs  07b plot-vector (scheme=test, predset=%s) -----\n", .m4c_pred))
   print(cmp[order(match(target, c("coniferfrac","domsp","Bio_a_ha","shannon")))], row.names=FALSE)
   cat("(raster ~ 07b expected; small drop from 30 m predictor rasterisation is normal.)\n")
-} else cat("\n(m4c_dualtrack.csv not found — run 07b FULL for the side-by-side; raster metrics above still stand.)\n")
+} else cat("\n(m4c_dualtrack.csv not found — run 07b for the side-by-side; raster metrics above still stand.)\n")
 
-cat(sprintf("\nwrote:\n  %s/imputation_map_validation%s.csv   (metrics)\n  %s/imputation_test_pred%s.csv        (per-plot; for Fig / records)\n",
+cat(sprintf("\nwrote:\n  %s/imputation_map_validation%s.csv   (metrics)\n  %s/imputation_test_pred%s.csv        (per-plot)\n",
             outd, .tsuf, outd, .tsuf))

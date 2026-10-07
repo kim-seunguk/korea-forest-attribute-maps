@@ -1,16 +1,23 @@
 # 01b_nfi_to_points.R — build the per-plot reference table from the inventory tree records.
 # ------------------------------------------------------------------------------------------------
-# One row per plot, carrying everything later stages read off a plot: its forest type, diameter and
-# density class, its dominant species, and its per-hectare biomass, carbon and basal area.
-# Covariates are extracted at the plot coordinates later, in 03d.
+# One row per plot, carrying everything later stages read off a plot: its coordinates, its forest
+# type, diameter and density class, its dominant species, and its per-hectare biomass, carbon and
+# basal area. Covariates are extracted at the plot coordinates later, in 03d.
 #
 # The unit is the 표본점 (subplot), not the 집락 (cluster). Each 표본점 is classified independently
 # in the field, and the four 표본점 of a cluster sit 50 m apart, further than one 30 m cell.
 # Aggregating to the cluster would blend distinct stands and inflate the mixed-forest class.
 #
+# The plot coordinate comes from the plot register, except where the stand table, which records the
+# position a second time, disagrees with it; the coordinate step below says how that is decided.
+#
 # In : data/raw/nfi_curated/NFI_Full.RData   (tree, stand, general, subplot_list)
 #      data/species_forest_type_lookup.csv
 # Out: data/interim/nfi8/plot_reference.csv
+#      data/interim/nfi8/coordinate_corrections.csv   (the plots whose coordinate was replaced)
+# An existing plot_reference.csv is moved to data/interim/nfi8/_superseded_<date>/ first, never
+# overwritten. Both files hold exact plot coordinates and stay under data/interim/, which is not
+# distributed.
 #
 #   source(here::here("pipeline", "01b_nfi_to_points.R"))   # run in RStudio
 # ------------------------------------------------------------------------------------------------
@@ -108,11 +115,34 @@ build_ref <- function(cyc) {
   st <- unique(st[, .(Plot_ID, V_DC, V_DN)])
 
   ge  <- unique(general[Nth == cyc, .(Plot_ID = Subplot_new, UTMK_X, UTMK_Y, F_or_NonF)])
+
+  # ---- plot coordinates --------------------------------------------------------------------------
+  # The register (general) and the stand table (stand) each record the plot position. From 2022 the
+  # stand table's coordinates are in the register's coordinate system; the 2021 ones are on another
+  # datum and are not compared. Where the two differ by more than 50 m, the register position is the
+  # one found to be wrong (it disagrees with the plot's own survey records), so those plots take the
+  # stand coordinate. A disagreement of 2 km or more stops the script, because then neither source
+  # can be trusted for that plot.
+  sc  <- unique(stand[Nth == cyc & Year >= 2022,
+                      .(Plot_ID = Subplot_new, sX = as.numeric(Coord_E), sY = as.numeric(Coord_N))])
+  sc  <- sc[is.finite(sX) & is.finite(sY)]
+  stopifnot(!anyDuplicated(sc$Plot_ID))
+  fix <- merge(ge[, .(Plot_ID, gX = UTMK_X, gY = UTMK_Y)], sc, by = "Plot_ID")
+  fix[, d_gs := sqrt((sX - gX)^2 + (sY - gY)^2)]
+  fix <- fix[d_gs > 50]
+  if (any(fix$d_gs >= 2000))
+    stop("register and stand coordinates are 2 km or more apart for: ",
+         paste(fix[d_gs >= 2000, Plot_ID], collapse = ", "), call. = FALSE)
+  ge[fix, on = "Plot_ID", `:=`(UTMK_X = i.sX, UTMK_Y = i.sY)]
+  if (nrow(fix))
+    cat(sprintf("coordinates: %d plots take the stand-table position (median shift %.0f m, max %.0f m)\n",
+                nrow(fix), median(fix$d_gs), max(fix$d_gs)))
+
   sl  <- unique(subplot_list[Year %in% yrs, .(Plot_ID = Subplot_new, BAPH, Bio_a_ha, Carbon_a_ha)],
                 by = "Plot_ID")                                          # this cycle's years only
   # Dominant species by expansion-factor-weighted basal area, describing the plot as surveyed. The
-  # mapped attribute is a different quantity, rebuilt in 04b: live trees only, unweighted basal area,
-  # and the two regional pine races merged into Pinus densiflora.
+  # mapped attribute is a different quantity, rebuilt in 04b on the same per-hectare basis: live
+  # trees only, and the two regional pine races merged into Pinus densiflora.
   dom <- tr[, .(baef = sum(BA * EF)), by = .(Plot_ID, Species_ko)][
             order(Plot_ID, -baef), .(dom_species = Species_ko[1], dom_ba_share = baef[1] / sum(baef)), by = Plot_ID]
 
@@ -121,7 +151,7 @@ build_ref <- function(cyc) {
   # contributed no canopy tree, which is what makes this the binding condition. It selects the
   # 17,099-plot analysis set, so changing it changes every number that follows.
   ref <- ref[F_or_NonF == 1 & !is.na(V_VG)]
-  list(ref = ref, unmatched = unmatched)
+  list(ref = ref, unmatched = unmatched, fix = fix)
 }
 
 FT_NAME <- c("10"="기타침엽수","11"="곰솔","12"="낙엽송","13"="리기다소나무","14"="소나무","15"="잣나무",
@@ -136,8 +166,18 @@ distr <- function(dt, col, nm = NULL) {                      # count and proport
 
 r <- build_ref(CYCLE)
 o <- here("data", "interim", VERSION); dir.create(o, showWarnings = FALSE, recursive = TRUE)
+if (file.exists(file.path(o, "plot_reference.csv"))) {           # keep the previous table, never overwrite it
+  a <- file.path(o, sprintf("_superseded_%s", format(Sys.Date(), "%Y%m%d"))); dir.create(a, showWarnings = FALSE)
+  stopifnot(file.rename(file.path(o, "plot_reference.csv"), file.path(a, "plot_reference.csv")))
+}
 fwrite(r$ref, file.path(o, "plot_reference.csv"), bom = TRUE)
-cat(sprintf("\n%s -> plot_reference.csv  (%d forested plots)\n", VERSION, nrow(r$ref)))
+# The corrected plots, with both positions and the distance behind the decision (interim only: it
+# carries plot coordinates and is never published).
+fwrite(r$fix[, .(Plot_ID, UTMK_X_general = gX, UTMK_Y_general = gY, UTMK_X = sX, UTMK_Y = sY,
+                 d_general_stand_m = round(d_gs, 1), in_reference = Plot_ID %in% r$ref$Plot_ID)],
+       file.path(o, "coordinate_corrections.csv"), bom = TRUE)
+cat(sprintf("\n%s -> plot_reference.csv  (%d forested plots); coordinate_corrections.csv (%d plots)\n",
+            VERSION, nrow(r$ref), nrow(r$fix)))
 
 # Print the class distributions. They are the first check that the codings above were read
 # correctly, so look at them before running anything downstream.

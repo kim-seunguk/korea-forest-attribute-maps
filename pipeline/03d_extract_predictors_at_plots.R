@@ -21,6 +21,9 @@
 # Out: data/interim/nfi8/rd_points.csv  and  rd_points.gpkg   (EPSG:5179)
 #
 #   source(here::here("pipeline", "03d_extract_predictors_at_plots.R"))   # run in RStudio, light
+#   REBUILD_RD <- TRUE before source() moves an existing table to data/interim/nfi8/_superseded_<date>/
+#   and rebuilds it. Rebuild after re-running 01b: this script copies plot_reference's field classes
+#   and coordinates, so a stale plot_reference propagates into every later stage.
 # ------------------------------------------------------------------------------------------------
 suppressPackageStartupMessages({ library(here); library(terra); library(data.table) })
 source(here("R", "paths.R"))
@@ -31,6 +34,7 @@ V_LAYERS  <- V_PREDICTORS                                   # the forest-type ma
 COVARS    <- c("C_PREC", "C_TMAX", "C_TMIN", "C_RH", "C_GSL", "C_FD0", "C_DTR",
                "T_ELE", "T_SLO", "sin_y", "cos_x", "C_PAR")
 log_t <- function(...) cat(sprintf("[%s] ", format(Sys.time(), "%H:%M:%S")), ..., "\n")
+if (!exists("REBUILD_RD")) REBUILD_RD <- FALSE
 
 # The columns this script writes, in the order it writes them. The checkpoint below compares an
 # existing file against this, so that a run after the column set has changed stops instead of
@@ -40,7 +44,14 @@ OUT_COLUMNS <- c("Plot_ID", "UTMK_X", "UTMK_Y", "Lon", "Lat",
                  paste0("fld_", V_LAYERS),
                  "dom_species", "dom_ba_share", "BAPH", "Bio_a_ha", "Carbon_a_ha")
 
-out_csv <- here("data", "interim", VERSION, "rd_points.csv")
+out_csv  <- here("data", "interim", VERSION, "rd_points.csv")
+out_gpkg <- here("data", "interim", VERSION, "rd_points.gpkg")
+if (file.exists(out_csv) && REBUILD_RD) {                   # keep the previous table, never overwrite it
+  a <- here("data", "interim", VERSION, sprintf("_superseded_%s", format(Sys.Date(), "%Y%m%d")))
+  dir.create(a, showWarnings = FALSE)
+  for (f in c(out_csv, out_gpkg)) if (file.exists(f)) stopifnot(file.rename(f, file.path(a, basename(f))))
+  log_t("archived the previous rd_points ->", basename(a))
+}
 if (file.exists(out_csv)) {
   have <- names(fread(out_csv, nrows = 0L))
   if (identical(have, OUT_COLUMNS)) {
@@ -49,10 +60,13 @@ if (file.exists(out_csv)) {
     stop(out_csv, " already exists, but its columns are not the ones this script writes now.",
          "\n  it has  : ", paste(setdiff(have, OUT_COLUMNS), collapse = ", "),
          "\n  it lacks: ", paste(setdiff(OUT_COLUMNS, have), collapse = ", "),
-         "\n  Delete it and re-run, so that every later stage reads one table.", call. = FALSE)
+         "\n  Set REBUILD_RD <- TRUE and re-run, so that every later stage reads one table.", call. = FALSE)
   }
 } else {
-  pr <- fread(here("data", "interim", VERSION, "plot_reference.csv"), encoding = "UTF-8")
+  # Plot_ID is read as character. Read as a number, the 13-digit id loses its exact value and reaches
+  # the .gpkg as a fixed-point string that no join matches.
+  pr <- fread(here("data", "interim", VERSION, "plot_reference.csv"), encoding = "UTF-8",
+              colClasses = list(character = "Plot_ID"))
   log_t(sprintf("%s: %d plots (forest-type map %s)", VERSION, nrow(pr), FTM_VINTAGE))
 
   pts <- terra::vect(as.data.frame(pr), geom = c("UTMK_X", "UTMK_Y"), crs = PT_CRS, keepgeom = TRUE)
@@ -93,6 +107,6 @@ if (file.exists(out_csv)) {
   dir.create(dirname(out_csv), showWarnings = FALSE, recursive = TRUE)
   fwrite(rd, out_csv, bom = TRUE)
   terra::writeVector(terra::vect(as.data.frame(rd), geom = c("UTMK_X", "UTMK_Y"), crs = PT_CRS),
-                     here("data", "interim", VERSION, "rd_points.gpkg"), overwrite = TRUE)
+                     out_gpkg, overwrite = TRUE)
   log_t(sprintf("  wrote %s (+ .gpkg)", out_csv))
 }

@@ -1,19 +1,20 @@
-# 07e_forest_type_map_tiers.R — how much the forest-type map adds, tier by tier.
+# 07e_forest_type_map_tiers.R — how much the forest-type map adds, step by step.
 # ============================================================================================
 # Stage 07a compares the predictor sets on one common sample, the plots complete under all of them,
 # which is restricted to plots the forest-type map covers. This re-evaluates each step on its own
-# complete sample instead, so that the configuration needing no national map is credited with the
+# complete sample instead, so that a configuration needing no national map is credited with the
 # plots it can actually use:
-#   none    = climate and terrain + Sentinel-2 medians    (this is the delivered base tier)
+#   none    = climate and terrain + Sentinel-2 medians    (no forest-type map at all)
 #   limited = + stand origin                              (the one map field that is reliable)
-#   maximal = + the forest-type map stand attributes      (the delivered FTM-added tier)
-# The three labels are local to this comparison; the delivered tiers are named base and FTM-added.
-# Reports R², skill and n per step, on spatial CV and on the test set: the portability-against-fit
-# trade-off, and how many plots each step costs.
+#   maximal = + the forest-type map stand attributes      (forest type, diameter class, density class)
+# The three labels are local to this comparison, and none of them is the delivered predictor set,
+# which adds stand origin AND the stand attributes; 07a scores that set with FTM_ONLY. What this
+# measures is the portability-against-fit trade-off: R², skill and n per step, on spatial CV and on
+# the test set, and how many plots each step costs.
 #
 # Inputs : outputs/nfi8/{cv_folds.csv,m2_targets.csv} · data/interim/nfi8/rd_points.csv · data/interim/nfi8/plot_features_s2.csv
-# Output : outputs/nfi8/m5_tiers.csv  (tier,target,scheme,point,value,nir,delta_vs_none,n)
-#   source(...) runs the full pass; PILOT <- TRUE first for a quick shakedown.
+# Output : outputs/nfi8/m5_tiers<SUF>.csv  (tier,target,scheme,point,value,nir,delta_vs_none,n); SUF = "_PILOT" for a pilot
+#   source(...) runs the full pass; PILOT <- TRUE first for a quick shakedown, which writes its own file.
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(randomForest); library(foreach); library(doParallel) })
 source(here::here("R","paths.R")); source(here::here("R","run_utils.R")); source(here::here("R","eval_utils.R"))
@@ -24,6 +25,7 @@ SEED <- 7214L; MIN_SP <- 20L
 cfg <- run_sizing(VERSION, "m5_tiers", pilot=PILOT, budget_min=if (PILOT) 25 else 150)
 K <- cfg$K; NTREE <- cfg$ntree
 outd <- here("outputs", VERSION)
+SUF  <- if (PILOT) "_PILOT" else ""                                # a pilot writes its own file
 
 tm <- run_timer("m5_tiers", version=VERSION, budget_min=if (PILOT) 25 else 150)
 tm$stage("load")
@@ -85,7 +87,7 @@ for (i in seq_along(c(REG,CLS))) { tg <- c(REG,CLS)[i]; tm$stage(sprintf("t:%s",
   run_one(tg, is_class = tg %in% CLS) }
 stopCluster(cl)
 
-out <- rbindlist(rows); fwrite(out, file.path(outd,"m5_tiers.csv"))
+out <- rbindlist(rows); fwrite(out, file.path(outd, sprintf("m5_tiers%s.csv", SUF)))
 cat("\n===== forest-type map tiers (per-predset masked; spatial folds) =====\n")
 print(out[scheme=="spatial", .(target,tier,point,delta_vs_none,n)], row.names=FALSE)
 cat("\nPortability: tier=none n vs maximal n (how many more plots no-FTM uses).\n")

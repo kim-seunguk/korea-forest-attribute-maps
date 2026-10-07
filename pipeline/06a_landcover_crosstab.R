@@ -1,10 +1,10 @@
 # 06a_landcover_crosstab.R — forest x land-cover confusion table for the mask refinement.
 #
-# Reads the Level-1 land-cover raster from 02e together with the FTM-added maps, both on the
-# delivered grid, and tabulates the land-cover class distribution across the mapped forest cells —
-# those with a finite delivered value, which is the forest-type map's stocked extent — with the mean
-# coniferous fraction and mean biomass of each class. Those two local signals separate the two ways
-# a disagreement can arise:
+# Reads the Level-1 land-cover raster from 02e together with the delivered direct maps, both at 30 m,
+# and tabulates the land-cover class distribution across the mapped forest cells — those with a
+# finite delivered value, which is the forest-type map's stocked extent — with the mean coniferous
+# fraction and mean biomass of each class. Those two local signals separate the two ways a
+# disagreement can arise:
 #   - a confident error : a class that cannot carry trees, with low mean biomass -> an airport or an
 #                         urban block that the forest-type map committed to forest.
 #   - a likely omission : a class that can carry trees, with forest-like biomass -> orchards, edge
@@ -33,12 +33,12 @@ L1  <- terra::rast(L1_TIF)
 cf  <- terra::rast(CONIF)
 bio <- terra::rast(BIO)
 
-# The L1 raster was assembled from per-sheet tiles, so its extent is the land bounding box — a
-# sub-window of the delivered map grid (SAME origin/res/alignment, smaller extent). Pad it to the
-# full delivered extent so mask()/zonal() geometries match exactly (aligned -> extend adds NA cells,
-# no resampling / no value change).
+# The land-cover raster is rasterised from the source polygons on its own 30 m lattice, which is not
+# cell-aligned with the delivered grid, so crop/extend cannot bring the two together. Regrid it by
+# nearest neighbour onto the delivered grid, exactly as 06b does for the filter itself; a sub-cell
+# shift does not matter for a class tabulation.
 if (!terra::compareGeom(L1, cf, stopOnError = FALSE, messages = FALSE)) {
-  L1 <- terra::crop(terra::extend(L1, cf), cf)
+  L1 <- terra::resample(L1, cf, method = "near")
   stopifnot(terra::compareGeom(L1, cf, stopOnError = FALSE, messages = FALSE))
 }
 
@@ -71,7 +71,7 @@ ARCHIVE <- here("data", "raw", "landcover_mcee_national", "_derived")
 if (dir.exists(ARCHIVE)) file.copy(OUT_CSV, file.path(ARCHIVE, basename(OUT_CSV)), overwrite = TRUE)
 
 ## ---- console summary ---------------------------------------------------------------------------
-cat(sprintf("\nOur forest cells (full tier): %s  (%s ha)\n",
+cat(sprintf("\nOur forest cells: %s  (%s ha)\n",
             format(totf, big.mark = ","), format(round(totf * CELL_HA), big.mark = ",")))
 cat(sprintf("  agreement  MCEE=forest(300): %.1f%%\n", 100 * tab[L1 == 300, cells] / totf))
 cat(sprintf("  disagreement (non-300)    : %.1f%%\n", 100 * (totf - tab[L1 == 300, cells]) / totf))

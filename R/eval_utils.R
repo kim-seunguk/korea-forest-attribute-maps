@@ -6,6 +6,8 @@
 #   (2) block size is sized against the spatial-autocorrelation range of the raw response, which is
 #       what a coordinate-aware model can exploit. 04a may override the variogram's own pick; it
 #       prints both.
+#   (3) blocks, random folds and bootstrap resamples are drawn by inventory cluster, not by plot. The
+#       four subplots of a cluster sit about 50 m apart and are not independent of one another.
 #
 # This file is the single home for: variogram block-sizing, the test/train + spatial/random fold split, and the
 # metric primitives (nir / bootstrap CI / r2 / rmse). Source AFTER R/paths.R (+ R/run_utils.R).
@@ -43,15 +45,24 @@ estimate_block_size <- function(x, y, values, detrend = FALSE, n_sample = 3000L,
 }
 
 # ---- 2. spatial blocks + test/train + spatial/random folds ---------------------------------
-make_spatial_blocks <- function(ux, uy, block_km) {
-  bx <- floor((ux - min(ux)) / (block_km * 1000)); by <- floor((uy - min(uy)) / (block_km * 1000))
+# cluster: placed each by its own coordinate, the subplots of a cluster can straddle a block edge and
+# so end up on both sides of the train/test split. With `cluster` given, every subplot takes its
+# cluster's mean position, so a cluster lies in exactly one block. The grid origin is still taken
+# from the plots themselves.
+make_spatial_blocks <- function(ux, uy, block_km, cluster = NULL) {
+  ox <- min(ux); oy <- min(uy)
+  if (!is.null(cluster)) { ux <- ave(ux, cluster); uy <- ave(uy, cluster) }
+  bx <- floor((ux - ox) / (block_km * 1000)); by <- floor((uy - oy) / (block_km * 1000))
   paste(bx, by, sep = "_")
 }
 
 # Hold out WHOLE blocks as the independent TEST set (spatially disjoint from train, ~test_frac of plots);
 # partition the remaining (train) blocks into K SPATIAL folds; assign train plots to K RANDOM folds (the
 # leaky contrast that exposes the optimism). Test rows get NA folds (never used in CV).
-assign_folds <- function(block_id, plot_id, K = 10L, test_frac = 0.2, seed = 7214L) {
+# cluster: the random folds are assigned per cluster, so that subplots 50 m apart never sit on both
+# sides of a random-CV split. Drawn per plot, the random-vs-spatial gap would carry that sibling
+# leakage. NULL keeps the per-plot assignment.
+assign_folds <- function(block_id, plot_id, K = 10L, test_frac = 0.2, seed = 7214L, cluster = NULL) {
   ublk  <- unique(block_id)
   blk_n <- tapply(seq_along(block_id), block_id, length)            # plots per block
   set.seed(seed); blk_order <- sample(names(blk_n))
@@ -63,7 +74,12 @@ assign_folds <- function(block_id, plot_id, K = 10L, test_frac = 0.2, seed = 721
   set.seed(seed + 1L); blk_fold <- setNames(sample(rep_len(1:K, length(train_blocks))), train_blocks)
   fold_spatial <- as.integer(ifelse(role == "train", blk_fold[block_id], NA_integer_))
   tr <- which(role == "train"); fold_random <- rep(NA_integer_, length(plot_id))
-  set.seed(seed + 2L); fold_random[tr] <- sample(rep_len(1:K, length(tr)))
+  if (is.null(cluster)) {
+    set.seed(seed + 2L); fold_random[tr] <- sample(rep_len(1:K, length(tr)))
+  } else {
+    uc <- unique(cluster[tr]); set.seed(seed + 2L); cf <- setNames(sample(rep_len(1:K, length(uc))), uc)
+    fold_random[tr] <- cf[cluster[tr]]
+  }
   data.frame(Plot_ID = plot_id, block_id = block_id, role = role,
              fold_spatial = fold_spatial, fold_random = as.integer(fold_random),
              stringsAsFactors = FALSE)
@@ -73,10 +89,24 @@ assign_folds <- function(block_id, plot_id, K = 10L, test_frac = 0.2, seed = 721
 r2   <- function(o, p) 1 - sum((o - p)^2) / sum((o - mean(o))^2)
 rmse <- function(o, p) sqrt(mean((o - p)^2))
 nir  <- function(o) max(table(o)) / length(o)                       # no-information rate (majority class)
-bci  <- function(o, p, fn, nboot = 1000L) {                         # bootstrap CI of a metric over plot resamples
-  v <- replicate(nboot, { i <- sample.int(length(o), replace = TRUE); fn(o[i], p[i]) })
+# Bootstrap CI of a metric. cluster: whole clusters are resampled rather than plots, because the
+# residuals of the subplots in one cluster are correlated and plot resampling understates the
+# interval. A fixed seed makes the interval reproducible; the caller's RNG state is restored on exit.
+bci  <- function(o, p, fn, nboot = 1000L, cluster = NULL, seed = 7214L) {
+  if (exists(".Random.seed", envir = globalenv())) {
+    old <- get(".Random.seed", envir = globalenv()); on.exit(assign(".Random.seed", old, envir = globalenv()))
+  }
+  set.seed(seed)
+  if (is.null(cluster)) {
+    v <- replicate(nboot, { i <- sample.int(length(o), replace = TRUE); fn(o[i], p[i]) })
+  } else {
+    idx <- split(seq_along(o), cluster)
+    v <- replicate(nboot, { i <- unlist(idx[sample.int(length(idx), replace = TRUE)], use.names = FALSE); fn(o[i], p[i]) })
+  }
   stats::quantile(v, c(.025, .975), na.rm = TRUE)
 }
+# The cluster a plot belongs to: digits 1-12 of the 13-digit 신표본점번호, the last digit being the subplot.
+cluster_of <- function(plot_id) substr(as.character(plot_id), 1L, 12L)
 
 # Read the frozen split, so every stage shares identical folds. Call it once, at the top of a stage.
 load_cv_folds <- function(version) {

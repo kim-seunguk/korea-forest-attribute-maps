@@ -6,6 +6,10 @@
 #     block was set where measured leakage stops falling. Both numbers are printed.
 #   - an independent test set of whole held-out blocks, spatially disjoint from the training data,
 #     plus K spatial folds, and K random folds as the leaky contrast.
+#   - blocks and folds by inventory cluster (CLUSTER_FOLDS). The four subplots of a cluster sit
+#     about 50 m apart, so every subplot takes its cluster's mean position for the blocking and its
+#     cluster's random fold: a cluster never straddles a block edge, the train/test split or a
+#     random-fold boundary.
 # Engine = R/eval_utils.R; instrumentation = R/run_utils.R (stage timing + run_timings.csv).
 #
 # Inputs : data/interim/nfi8/rd_points.csv  (Plot_ID, UTMK_X/Y, Bio_a_ha, BAPH, dom_ba_share)
@@ -26,9 +30,13 @@ BLOCK_CLAMP <- c(15, 80)                                    # km: floor keeps en
 # biomass reaches its floor well before 50 km, and 50 km still leaves enough blocks for a stable
 # K = 10. Set this to NULL to fall back on the variogram's own pick, which is printed either way.
 BLOCK_KM_OVERRIDE <- 50L
+# CLUSTER_FOLDS (default TRUE): blocks and random folds by inventory cluster, see R/eval_utils.R.
+# FALSE places every subplot by its own coordinate and draws the random folds per plot.
+if (!exists("CLUSTER_FOLDS")) CLUSTER_FOLDS <- TRUE
 outd <- here("outputs", VERSION); dir.create(outd, showWarnings = FALSE, recursive = TRUE)
 
-cat(sprintf("\n===== spatial folds [%s]  K=%d  test_frac=%.2f  seed=%d =====\n", VERSION, K, TEST_FRAC, SEED))
+cat(sprintf("\n===== spatial folds [%s]  K=%d  test_frac=%.2f  seed=%d  cluster_folds=%s =====\n",
+            VERSION, K, TEST_FRAC, SEED, CLUSTER_FOLDS))
 tm <- run_timer("m1_eval_scaffold", version = VERSION, budget_min = 15)
 
 # ---- 1. load ------------------------------------------------------------------------------
@@ -84,13 +92,15 @@ try({
 
 # ---- 3. blocks + test/train + spatial/random folds ----------------------------------------
 tm$stage("folds")
-block_id <- make_spatial_blocks(rd$UTMK_X, rd$UTMK_Y, BLOCK_KM)
-folds    <- assign_folds(block_id, rd$Plot_ID, K = K, test_frac = TEST_FRAC, seed = SEED)
+cl_id    <- if (CLUSTER_FOLDS) cluster_of(rd$Plot_ID) else NULL          # digits 1-12 of the plot id
+block_id <- make_spatial_blocks(rd$UTMK_X, rd$UTMK_Y, BLOCK_KM, cluster = cl_id)
+folds    <- assign_folds(block_id, rd$Plot_ID, K = K, test_frac = TEST_FRAC, seed = SEED, cluster = cl_id)
 folds$UTMK_X <- rd$UTMK_X; folds$UTMK_Y <- rd$UTMK_Y; folds$block_km <- BLOCK_KM
 
 n_blk   <- length(unique(block_id))
 n_test  <- sum(folds$role == "test"); n_train <- sum(folds$role == "train")
 n_tblk  <- length(unique(folds$block_id[folds$role == "train"]))
+if (!is.null(cl_id)) cat(sprintf("clusters=%d\n", length(unique(cl_id))))
 cat(sprintf("blocks=%d (train-blocks=%d)  TEST=%d plots (%.1f%%)  TRAIN=%d plots\n",
             n_blk, n_tblk, n_test, 100 * n_test / n, n_train))
 if (n_tblk < K) cat(sprintf("WARN only %d train blocks for K=%d spatial folds — folds will be coarse.\n", n_tblk, K))
@@ -102,5 +112,5 @@ setcolorder(setDT(folds), c("Plot_ID", "UTMK_X", "UTMK_Y", "block_id", "block_km
 fwrite(folds, file.path(outd, "cv_folds.csv"))
 cat(sprintf("wrote %s/cv_folds.csv  (the frozen split every later stage reads via load_cv_folds('%s'))\n", outd, VERSION))
 
-tm$done(n = n, params = sprintf("BLOCK_KM=%d K=%d test_frac=%.2f", BLOCK_KM, K, TEST_FRAC))
+tm$done(n = n, params = sprintf("BLOCK_KM=%d K=%d test_frac=%.2f cluster_folds=%s", BLOCK_KM, K, TEST_FRAC, CLUSTER_FOLDS))
 cat("NEXT: stage 04b builds the targets on these frozen folds (load_cv_folds).\n")

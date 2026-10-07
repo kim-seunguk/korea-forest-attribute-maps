@@ -6,43 +6,41 @@
 #
 # What the matching runs on
 #   y = the plot's field forest structure: forest type, diameter class, density class
-#   x = 14 climate, terrain and position variables + 42 Sentinel-2 seasonal medians,
-#       plus the forest-type map attributes and stand origin in the FTM-added tier
+#   x = 14 climate, terrain and position variables + 42 Sentinel-2 seasonal medians
+#       + the forest-type map attributes and stand origin (60 predictors, the same set as 05a)
 #
 # The four published attributes are deliberately not part of y. Matching on them would tune the
 # selection to the quantities the accuracy is then reported for. Structure is directly observed and
 # discriminates well, whereas diversity and biomass are weak derived targets that would split the
 # forest almost at random and pull ecologically dissimilar plots together. Keeping y field-measured
-# while x comes from the map also keeps the two tiers non-circular. Stand age is not matched on
+# while x comes from the map also keeps the matching non-circular. Stand age is not matched on
 # either; it is largely implied by diameter class and travels with the matched plot.
 #
 # Why the delivered map uses every plot
 #   k = 1 imputation is donor-based, so a plot held out of the library can never appear on the map.
 #   Holding out 20 % would permanently erase the rare forest types and species that fell in that
-#   20 %. The library is therefore all plots, and accuracy is measured separately in 07b under
-#   spatial cross-validation and a disjoint test set, which is a conservative bound on this map.
+#   20 %. The library is therefore all plots with a complete record, and accuracy is measured
+#   separately in 07b under spatial cross-validation and a disjoint test set, which is a conservative
+#   bound on this map.
 #
 #   ! Sampling this map at plot locations does not validate it. Every plot is a donor, and most
 #     cells containing a plot match it back to itself, so most of the comparison is a plot against
 #     its own record. 07c does sample it, and reports how often that happened alongside the
 #     metrics.
 #
-# Tiers (IMPUTE_TIER, default "full")
-#   full = 60 predictors, bounded by the forest-type map   -> index/imputation_ftm.tif
-#   base = 56 predictors, no map attributes                -> index/imputation_base.tif
-#   The base tier needs the northward-extended covariate grid and a forest-masked Sentinel-2
-#   composite, which together let it reach the far north-east where the map does not survey.
+#   A donor must carry every attribute the index is decoded to. A plot whose trees have no volume
+#   upstream has no biomass or carbon, and every cell matched to it would decode to a blank, so
+#   such plots are left out of the library. They stay in the composition targets elsewhere.
 #
-# In : data/interim/covar_5179_s2/s2med42_5179.tif (03a -> 03b), data/interim/nfi8/rd_points.csv,
-#      data/interim/nfi8/plot_features_s2.csv
-# Out: outputs/nfi8/index/imputation{_base,_ftm}.tif
-#      outputs/nfi8/models/train_reference{_base,_ftm}.csv and the fitted yaImpute object
+# In : data/interim/covar_5179_s2/s2_bands/s2band_%02d.tif (03a -> 03b -> 03c), data/interim/nfi8/rd_points.csv,
+#      data/interim/nfi8/plot_features_s2.csv, data/interim/fmap_30m/<vintage>/{V_VG,V_DC,V_DN,V_FROR}.tif
+# Out: outputs/nfi8/index/imputation_ftm.tif + index/nearest_reference_distance_ftm.tif
+#      outputs/nfi8/models/train_reference_ftm.csv and the fitted yaImpute object
 #
 # Then: 05c decodes the index into attribute rasters, and 06b must be re-run because the
 #       land-cover filter is lost whenever these rasters are rewritten.
 #
 # Heavy — k = 1 over every forest cell in the country, processed in blocks. Run in RStudio:
-#   IMPUTE_TIER <- "base"                                   # omit for the default "full"
 #   source(here::here("pipeline", "05b_plot_index_imputation.R"))
 # ============================================================================================
 suppressPackageStartupMessages({
@@ -50,32 +48,30 @@ suppressPackageStartupMessages({
   library(foreach); library(doSNOW)      # parallel over row-chunks (all cores); gower loaded on workers
 })
 source(here("R", "paths.R"))
-NTREE <- 500L; KNN <- 1L; SEED <- 7214L                     # match 07b FULL (k=1 TreeMap, ntree=500)
+# NTREE is what yai() is handed, and it matches 07b. yaImpute divides it among the y variables
+# (ntree = max(50, floor(ntree / ncol(y)))), so the matching forest is three classification forests of
+# 166 trees, one per structure variable, not one forest of 500.
+NTREE <- 500L; KNN <- 1L; SEED <- 7214L
 
-# ---- TIER SWITCH (the same two tiers 07b_compare_families.R scores) --------------------------
-#   full (default) = 14 climate, terrain and position + 42 Sentinel-2 medians + forest type,
-#                    diameter class, density class and stand origin (60) -> index/imputation_ftm.tif
-#   base           = the same 56 without the map attributes              -> index/imputation_base.tif
+# ---- the predictor set ----------------------------------------------------------------------
+#   14 climate, terrain and position + 42 Sentinel-2 medians + forest type, diameter class, density
+#   class and stand origin (60) -> index/imputation_ftm.tif, bounded by the forest-type map.
+#   "full" is the run parameter R/paths.R keys the published file names by (FILE_TIER), and the token
+#   07b uses for the same set in its validation table.
 #
-#   Each tier also writes index/nearest_reference_distance{,_base}.tif: the random-forest distance
+#   Beside the index the run writes index/nearest_reference_distance_ftm.tif: the random-forest distance
 #   between a cell and the plot it matched, one minus the proportion of trees in which the two share
 #   a terminal node, so a higher value means a less similar match. yaImpute returns it as $neiDstTrgs.
 #   It is a distance, not a proximity, and it is not an area-of-applicability layer — no convex-hull
 #   or threshold test is run, so neither of those names applies. See the dataset documentation.
-#
-#   base predicts wherever the covariates and the forest-masked Sentinel-2 composite are both present,
-#   which reaches the far north-east where the forest-type map does not survey, and it needs no
-#   national map, so it is the portable configuration. It requires the northward-extended covariate
-#   grid from 02c and a forest-masked composite.
-#   Set IMPUTE_TIER <- "base" before sourcing; the default keeps the full path.
-TIER <- if (exists("IMPUTE_TIER")) IMPUTE_TIER else "full"; stopifnot(TIER %in% c("base", "full"))
+TIER <- "full"
 log_time <- function(m) { cat(sprintf("[%s] %s\n", format(Sys.time(), "%H:%M:%S"), m)); flush.console() }  # flush: a long non-yielding run otherwise buffers its output and silence looks like a hang
-log_time(sprintf("=== imputation TIER = '%s' ===", TIER))
+log_time("=== plot-index imputation ===")
 
 outd    <- here("outputs", VERSION)
 mdl_dir <- file.path(outd, "models"); dir.create(mdl_dir, showWarnings = FALSE, recursive = TRUE)
 idx_dir <- file.path(outd, "index");  dir.create(idx_dir, showWarnings = FALSE, recursive = TRUE)
-tsuf    <- tier_suffix(TIER)                                           # "_base" | "_ftm"; see R/paths.R
+tsuf    <- tier_suffix(TIER)                                           # "_ftm"; see R/paths.R
 out_tif <- file.path(idx_dir, sprintf("imputation%s.tif", tsuf))
 dst_tif <- file.path(idx_dir, sprintf("nearest_reference_distance%s.tif", tsuf))   # RF distance to the matched plot
 
@@ -89,7 +85,7 @@ dup <- intersect(setdiff(names(m2), "Plot_ID"), names(rd)); if (length(dup)) rd 
 DT <- Reduce(function(a, b) merge(a, b, by = "Plot_ID", all.x = TRUE),
              list(folds[, .(Plot_ID, role, fold_spatial)], rd, m2, feat))
 
-# ---- predictor set = predictor tier ('full' or 'base') ; y = FIELD structure {FT,DC,DN} (matched-on) --------------
+# ---- predictor set ; y = FIELD structure {FT,DC,DN} (matched-on) --------------
 preds_clim <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE","T_SLO","sin_y","cos_x","C_PAR","Lon","Lat")
 s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))                       # the 42 declared bands (R/paths.R)
 # sort() PINS the predictor column order. yaImpute's k=1 randomForest samples mtry columns in a
@@ -98,17 +94,16 @@ s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))                       # the 
 # which is regenerated per machine and not byte-identical -> the deposited product would differ by
 # machine. Must match the
 # identical sort in pipeline/07b_compare_families.R so the product and its validation agree.
-vstar  <- V_PREDICTORS                                                    # FTM raster-X (full tier); V_AC DROPPED
-PRED   <- if (TIER == "full") c(preds_clim, s2_med, vstar, "FROR") else   # full = 60 vars (07b 'full')
-          c(preds_clim, s2_med)                                           # base = 56 vars (07b 'clim_s2med')
+vstar  <- V_PREDICTORS                                                    # forest-type map predictors; stand age is not among them
+PRED   <- c(preds_clim, s2_med, vstar, "FROR")                           # 60 vars (07b 'full')
 # y = FIELD forest structure (NOT the deliverables). fld_V_VG = field FT (~15 groups) via EF-weighted IV (01b);
 # fld_V_DC/fld_V_DN = field diameter/crown-density classes. Deliverables ride as passengers in train_reference.
 TARGETS <- c("fld_V_VG","fld_V_DC","fld_V_DN")
 stopifnot(length(s2_med) == 42, all(PRED %in% names(DT)), all(TARGETS %in% names(DT)))
 
-DT[, V_VG := factor(as.character(V_VG))]                        # FTM raster-X predictors (full tier)
+DT[, V_VG := factor(as.character(V_VG))]                        # forest-type map predictors
 DT[, FROR := factor(as.character(FROR))]
-for (v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])      # raster-X DC/DN (full predictors)
+for (v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])      # map DC/DN
 # y = field structure: FT (~15) as factor + DC/DN numeric. No domsp lumping — domsp is a passenger now, not a target.
 DT[, fld_V_VG := factor(as.character(fld_V_VG))]
 for (v in c("fld_V_DC","fld_V_DN")) DT[[v]] <- as.numeric(DT[[v]])
@@ -117,6 +112,11 @@ for (v in c("fld_V_DC","fld_V_DN")) DT[[v]] <- as.numeric(DT[[v]])
 # Accuracy is estimated separately by 07b (80/20 + spatial K-fold CV); see header. yaImpute needs x & y complete.
 trDT <- DT[role %in% c("train", "test")]
 ok   <- complete.cases(trDT[, c(PRED, TARGETS), with = FALSE])
+# A donor must carry every attribute the index is decoded to (see header): plots without biomass or
+# carbon leave the library here.
+nb <- sum(ok & !(is.finite(trDT$Bio_a_ha) & is.finite(trDT$Carbon_a_ha)))
+ok <- ok & is.finite(trDT$Bio_a_ha) & is.finite(trDT$Carbon_a_ha)
+log_time(sprintf("library: %d otherwise-complete plots without biomass/carbon left out", nb))
 tr   <- trDT[ok]
 log_time(sprintf("reference (ALL plots 100%%, complete) = %d plots | predictors = %d | targets = %d",
                  nrow(tr), length(PRED), length(TARGETS)))
@@ -124,10 +124,10 @@ log_time(sprintf("reference (ALL plots 100%%, complete) = %d plots | predictors 
 X.df <- as.data.frame(tr[, PRED, with = FALSE])
 Y.df <- as.data.frame(tr[, TARGETS, with = FALSE]); Y.df$fld_V_VG <- droplevels(factor(Y.df$fld_V_VG))
 rownames(X.df) <- rownames(Y.df) <- as.character(seq_len(nrow(X.df)))   # plot_idx = 1..N = index raster values
-vg_levels   <- if (TIER == "full") levels(X.df$V_VG)  else NULL         # base has no V_VG/FROR predictors
-fror_levels <- if (TIER == "full") levels(X.df$FROR)  else NULL
+vg_levels   <- levels(X.df$V_VG)
+fror_levels <- levels(X.df$FROR)
 
-# ---- train_reference for 05c (plot_idx -> the matched plot's attributes); tier-tagged filename ----
+# ---- train_reference for 05c (plot_idx -> the matched plot's attributes) ----
 # Stamp = the matched plot's FIELD structure (the Y) + PASSENGER deliverables. Column names V_VG/V_DC/V_DN
 # are kept (05c's decode expects them), but the VALUES are the FIELD fld_* — NOT the raster-X predictors.
 ref <- tr[, .(plot_idx = seq_len(.N), Plot_ID,
@@ -142,7 +142,7 @@ log_time(sprintf("train_reference%s.csv saved (%d plots -> field FT/DC/DN + dom_
 # raster depends on the matching axis and the predictors, not on the passengers, and `tr` is rebuilt
 # deterministically from the same inputs, so plot_idx ordering is unchanged and the existing index
 # raster still aligns with the refreshed stamp.
-#   IMPUTE_STAMP_ONLY <- TRUE; IMPUTE_TIER <- "<tier>"; source(...05b...)   then 05c
+#   IMPUTE_STAMP_ONLY <- TRUE; source(...05b...)   then 05c
 if (isTRUE(get0("IMPUTE_STAMP_ONLY", ifnotfound = FALSE))) {
   log_time("STAMP_ONLY=TRUE -> train_reference rewritten; reusing the existing index raster. Run 05c next.")
 } else {
@@ -151,7 +151,7 @@ if (isTRUE(get0("IMPUTE_STAMP_ONLY", ifnotfound = FALSE))) {
 set.seed(SEED + NTREE)
 opt_md <- yai(x = X.df, y = Y.df, method = "randomForest", k = KNN, ntree = NTREE)
 saveRDS(opt_md, file.path(mdl_dir, sprintf("yai_s2%s_ntree_%d.rds", tsuf, NTREE)))
-log_time(sprintf("yaImpute trained (tier=%s, k=%d, ntree=%d, %d predictors)", TIER, KNN, NTREE, length(PRED)))
+log_time(sprintf("yaImpute trained (k=%d, ntree=%d, %d predictors)", KNN, NTREE, length(PRED)))
 
 # ===== 2. wall-to-wall predictor stack on the covar_5179 grid (all layers share this grid) ===
 covar_f <- setNames(file.path(here("data","interim","covar_5179"), paste0(preds_clim, ".tif")), preds_clim)
@@ -170,36 +170,32 @@ for (f in c(covar_f, s2_f)) require_file(f)
 
 covar_r <- raster::stack(unname(covar_f)); names(covar_r) <- preds_clim
 # Label the stack by the file's physical band order, which is what R/paths.R's S2_BAND_NAMES holds,
-# and not by s2_med's order. s2_med comes from the feature table, which Earth Engine exported with
-# its properties sorted alphabetically; assigning that order here mislabels every physical band and
-# scrambles the S2 predictors, which collapsed the imputation once. It was a real bug.
+# and not by s2_med's order. s2_med is sorted alphabetically above; assigning that order here would
+# mislabel every physical band and scramble the S2 predictors, which collapsed the imputation once.
+# It was a real bug.
 s2_r <- raster::stack(s2_f); stopifnot(raster::nlayers(s2_r) == 42L)
 names(s2_r) <- S2_BAND_NAMES
 stopifnot(setequal(names(s2_r), s2_med))                              # same 42 semantic bands; TD[[PRED]] reselects by name
 
-if (TIER == "full") {
-  vg_dir  <- here("data", "interim", "fmap_30m", FTM_VINTAGE)
-  vstar_f <- setNames(file.path(vg_dir, paste0(vstar, ".tif")), vstar)
-  fror_f  <- file.path(vg_dir, "V_FROR.tif")                          # file V_FROR.tif -> layer renamed 'FROR'
-  for (f in c(vstar_f, fror_f)) require_file(f)
-  # Align the two grids by EXTENDING the four small map layers up to the covariate grid, not by
-  # cropping the 56 large covariate and Sentinel-2 layers down. Cropping rewrites every one of those
-  # layers through per-block temporary files; extending four layers writes through GDAL once. The
-  # added north and edge cells get NA for the map attributes and are dropped by complete.cases in the
-  # worker, which is correct — the full tier is bounded by the map, and there is nothing to impute
-  # where the map does not reach. Extending to the covariate extent also puts both tiers on one grid,
-  # so their outputs align cell for cell.
-  e  <- raster::extent(covar_r); ce <- terra::ext(e[1], e[2], e[3], e[4])
-  vg_ext <- file.path(tempdir(), sprintf("vstar_ext_%s.tif", FTM_VINTAGE))
-  fr_ext <- file.path(tempdir(), sprintf("fror_ext_%s.tif",  FTM_VINTAGE))
-  terra::extend(terra::rast(unname(vstar_f)), ce, filename = vg_ext, overwrite = TRUE)   # pad V_* (3 layers) with NA
-  terra::extend(terra::rast(fror_f),          ce, filename = fr_ext, overwrite = TRUE)   # pad FROR (1 layer) with NA
-  vstar_r <- raster::stack(vg_ext);  names(vstar_r) <- vstar
-  fror_r  <- raster::raster(fr_ext); names(fror_r)  <- "FROR"
-  TD <- raster::stack(covar_r, s2_r, vstar_r, fror_r)[[PRED]]         # 60 layers on the covar grid, in training-X order
-} else {
-  TD <- raster::stack(covar_r, s2_r)[[PRED]]                          # 56 layers (base = covar + S2, extended grid)
-}
+vg_dir  <- here("data", "interim", "fmap_30m", FTM_VINTAGE)
+vstar_f <- setNames(file.path(vg_dir, paste0(vstar, ".tif")), vstar)
+fror_f  <- file.path(vg_dir, "V_FROR.tif")                          # file V_FROR.tif -> layer renamed 'FROR'
+for (f in c(vstar_f, fror_f)) require_file(f)
+# Align the two grids by EXTENDING the four small map layers up to the covariate grid, not by
+# cropping the 56 large covariate and Sentinel-2 layers down. Cropping rewrites every one of those
+# layers through per-block temporary files; extending four layers writes through GDAL once. The
+# added north and edge cells get NA for the map attributes and are dropped by complete.cases in the
+# worker, which is correct — the product is bounded by the map, and there is nothing to impute
+# where the map does not reach. Extending to the covariate extent also puts the index on the same
+# grid as the direct maps, so the two families align cell for cell.
+e  <- raster::extent(covar_r); ce <- terra::ext(e[1], e[2], e[3], e[4])
+vg_ext <- file.path(tempdir(), sprintf("vstar_ext_%s.tif", FTM_VINTAGE))
+fr_ext <- file.path(tempdir(), sprintf("fror_ext_%s.tif",  FTM_VINTAGE))
+terra::extend(terra::rast(unname(vstar_f)), ce, filename = vg_ext, overwrite = TRUE)   # pad V_* (3 layers) with NA
+terra::extend(terra::rast(fror_f),          ce, filename = fr_ext, overwrite = TRUE)   # pad FROR (1 layer) with NA
+vstar_r <- raster::stack(vg_ext);  names(vstar_r) <- vstar
+fror_r  <- raster::raster(fr_ext); names(fror_r)  <- "FROR"
+TD <- raster::stack(covar_r, s2_r, vstar_r, fror_r)[[PRED]]         # 60 layers on the covar grid, in training-X order
 stopifnot(identical(names(TD), PRED))
 nr <- nrow(TD); nc <- ncol(TD)
 log_time(sprintf("TD stack ready (%d layers, %d x %d, covar_5179 grid)", raster::nlayers(TD), nr, nc))
@@ -216,7 +212,7 @@ if (max(abs(rd$Lon), na.rm = TRUE) > 180) {                          # rd Lon/La
   log_time(sprintf("PRE-FLIGHT S2 alignment: median band cor(raster, features) = %.3f over %d plots (want > 0.7)", med_cor, length(chk)))
   if (is.na(med_cor) || med_cor < 0.5)
     stop("S2 raster MISALIGNED with training features (median cor ", round(med_cor, 3),
-         ") — fix align_s2 band order/names before the expensive run.", call. = FALSE)
+         ") — fix the 03b band order/names before the expensive run.", call. = FALSE)
 } else log_time("PRE-FLIGHT skipped (plot coords not in 5179 metres).")
 
 # ===== 3+4. wall-to-wall k = 1 imputation — STREAMING (bounded RAM) ==========================
@@ -270,7 +266,7 @@ log_time("SOCK cluster up; exporting model + stack to workers...")
 parallel::clusterEvalQ(cl, { suppressPackageStartupMessages({
   library(raster); library(yaImpute); library(randomForest); library(gower) })
   raster::rasterOptions(maxmemory = 1e9); NULL })
-parallel::clusterExport(cl, c("opt_md","TD","vg_levels","fror_levels","CHUNK","nr","TIER"))   # ONCE — not per task
+parallel::clusterExport(cl, c("opt_md","TD","vg_levels","fror_levels","CHUNK","nr"))   # ONCE — not per task
 
 impute_chunk <- function(r0) {                                  # runs on worker; opt_md/TD from clusterExport
   n <- min(CHUNK, nr - r0 + 1L)
@@ -279,11 +275,9 @@ impute_chunk <- function(r0) {                                  # runs on worker
   ok <- stats::complete.cases(m)
   if (any(ok)) {
     d <- as.data.frame(m[ok, , drop = FALSE])
-    if (TIER == "full") {                                      # base has no V_VG/FROR predictors -> skip factor recode
-      d$V_VG <- factor(as.character(d$V_VG), levels = vg_levels)
-      d$FROR <- factor(as.character(d$FROR), levels = fror_levels)
-    }
-    ok2 <- stats::complete.cases(d)                            # (full) drop cells whose V_VG/FROR code is unseen in training
+    d$V_VG <- factor(as.character(d$V_VG), levels = vg_levels)
+    d$FROR <- factor(as.character(d$FROR), levels = fror_levels)
+    ok2 <- stats::complete.cases(d)                            # drop cells whose V_VG/FROR code is unseen in training
     if (any(ok2)) {
       dd <- d[ok2, , drop = FALSE]; rownames(dd) <- paste0("T", seq_len(nrow(dd)))
       nt <- yaImpute::newtargets(opt_md, newdata = dd)          # $neiIdsTrgs = matched plot, $neiDstTrgs = its distance
@@ -347,11 +341,11 @@ log_time(sprintf("  throughput: %s forest cells/s overall (%s /s/core)",
                  format(round(n_forest / max(total_s, 1e-6)), big.mark = ","),
                  format(round(n_forest / max(total_s, 1e-6) / cores), big.mark = ",")))
 
-cat(sprintf("\nDONE (tier=%s) -> %s\n  imputed forest cells = %s (%.2f Mha) | index range = %g..%g (expect 1..%d)\n",
-            TIER, out_tif, format(n_forest, big.mark = ","), n_forest * 0.09 / 1e6, idx_min, idx_max, nrow(ref)))
-cat(sprintf("Next (keep IMPUTE_TIER<-\"%s\" set):\n", TIER),
+cat(sprintf("\nDONE -> %s\n  imputed forest cells = %s (%.2f Mha) | index range = %g..%g (expect 1..%d)\n",
+            out_tif, format(n_forest, big.mark = ","), n_forest * 0.09 / 1e6, idx_min, idx_max, nrow(ref)))
+cat("Next:\n",
     " 1) source pipeline/05c_index_to_attributes.R          (index -> attribute rasters + dom_species legend)\n",
     " 2) source pipeline/06b_apply_landcover_filter.R          (RE-APPLY built/barren/water filter)\n",
-    " 3) validate (pipeline/07b_compare_families.R): imputed FT vs field FT (+ vs FTM FT) + passenger biomass/shannon/domsp.\n")
+    " 3) validate (pipeline/07b_compare_families.R): imputed FT vs field FT (+ vs the forest-type map) + passenger biomass/shannon/domsp.\n")
 
 }   # end else (non-STAMP_ONLY: training + wall-to-wall)

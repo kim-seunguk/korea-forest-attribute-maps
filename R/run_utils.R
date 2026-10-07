@@ -126,7 +126,11 @@ run_banner <- function(run, pilot, cfg, n = NA, extra = "") {
 # is a fresh R session and starts with the default .libPaths(), so packages installed in a user
 # library or under renv are invisible to it and foreach fails to load. Passing the master's paths in
 # is what makes the parallel stages work; every one of them registers its cluster through here.
+# NFIMAP_MAX_WORKERS in the environment caps the worker count below n_max, for a machine that is
+# shared with other work.
 register_cluster <- function(n_max = 16L) {
+  cap <- suppressWarnings(as.integer(Sys.getenv("NFIMAP_MAX_WORKERS", "")))
+  if (!is.na(cap) && cap >= 1L) n_max <- min(n_max, cap)
   cl <- parallel::makeCluster(min(n_max, max(1L, parallel::detectCores() - 1L)))
   parallel::clusterCall(cl, function(p) .libPaths(p), .libPaths())
   doParallel::registerDoParallel(cl)

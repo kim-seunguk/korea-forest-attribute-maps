@@ -8,25 +8,21 @@
 # attributes written here are read off the matched plot; they never took part in selecting it, so
 # species, biomass and diversity all arrive as one internally consistent combination.
 #
-# In : outputs/nfi8/index/imputation{_base,_ftm}.tif
-#      outputs/nfi8/models/train_reference{_base,_ftm}.csv   (plot_idx 1:1 with the raster)
-# Out: outputs/nfi8/attributes{_base,_ftm}/spec30m_*.tif
+# In : outputs/nfi8/index/imputation_ftm.tif
+#      outputs/nfi8/models/train_reference_ftm.csv   (plot_idx 1:1 with the raster)
+# Out: outputs/nfi8/attributes_ftm/spec30m_*.tif
 #
 # Run in RStudio, after 05b. Light — minutes, not hours.
-#   IMPUTE_TIER <- "base"   # then "full"
 #   source(here::here("pipeline", "05c_index_to_attributes.R"))
 # ------------------------------------------------------------------------------------------------
 suppressPackageStartupMessages({ library(here); library(terra); library(data.table) })
 source(here::here("R", "paths.R"))
 
-# Which predictor set the index raster came from; mirrors 05b.
-if (!exists("IMPUTE_TIER")) IMPUTE_TIER <- "full"
-stopifnot(IMPUTE_TIER %in% c("base", "full"))
-.tsuf <- tier_suffix(IMPUTE_TIER)                        # "_base" | "_ftm"
+.tsuf <- tier_suffix("full")                             # "_ftm", the suffix 05b wrote; see R/paths.R
 
 outd <- here("outputs", VERSION)
 log_time <- function(msg) cat(sprintf("[%s] %s\n", format(Sys.time(), "%H:%M:%S"), msg))
-log_time(sprintf("index -> attributes | IMPUTE_TIER = '%s'", IMPUTE_TIER))
+log_time("index -> attributes")
 
 index_path <- require_file(file.path(outd, "index", sprintf("imputation%s.tif", .tsuf)))
 out_dir    <- file.path(outd, sprintf("attributes%s", .tsuf))
@@ -46,10 +42,12 @@ setorder(ref, plot_idx)                                  # plot_idx must be 1..N
 stopifnot(ref$plot_idx == seq_len(nrow(ref)))
 cat("plots indexed:", nrow(ref), "\n")
 
-# Field stand structure of the matched plot: forest type, age, diameter and density class.
+# Field stand structure of the matched plot: forest type, diameter and density class.
 for (v in V_STAND_ATTRIBUTES) stamp(as.numeric(ref[[v]]), v)
 
-# Dominant species becomes an integer raster plus a legend, since raster values must be numeric.
+# Dominant species becomes an integer raster plus a legend, since raster values must be numeric. This
+# is the plot's field species name, unpooled, so the legend here is the inventory's own list and is
+# longer than the direct map's: 07j puts the two on one basis before comparing them.
 sp_levels <- sort(unique(ref$dom_species))
 stamp(match(ref$dom_species, sp_levels), "dom_species",
       legend = data.table(code = seq_along(sp_levels), species = sp_levels))

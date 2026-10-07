@@ -1,19 +1,19 @@
 # fig08_calibration.R — reliability curves for the four uncertainty layers.
 # ============================================================================================
-# One 2x2 reliability figure from outputs/nfi8/m7_calibration.csv:
+# One 2x2 reliability figure from outputs/nfi8/m7_calibration_ftm.csv (07g with FTM_ONLY):
 #   (a) coniferous fraction · (b) aboveground biomass · (c) Shannon diversity
 #       -> predicted ensemble SD vs mean absolute error (monotonic increase = reliable uncertainty)
 #   (d) dominant species -> vote margin vs observed accuracy
-# Higher predicted uncertainty means higher observed error, monotonically across deciles: strong for
-# (a) and (d), weak for (b) and (c). The uncertainty maps themselves are composed in GIS software
-# from m8_uncertainty_30m/.
+# Higher predicted uncertainty should mean higher observed error, monotonically across deciles; the
+# relation is strong for coniferous fraction and dominant species and weaker for biomass and
+# diversity. The uncertainty maps themselves are composed in GIS software from m8_uncertainty_30m/.
 #   source(here::here("figures","fig08_calibration.R"))
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(ggplot2); library(patchwork) })
 source(here::here("figures","theme.R"))
 VERSION <- "nfi8"
 outd <- here("figures","rendered"); dir.create(outd, showWarnings=FALSE, recursive=TRUE)
-cal <- fread(here("outputs", VERSION, "m7_calibration.csv"))
+cal <- fread(here("outputs", VERSION, "m7_calibration_ftm.csv"))        # 07g_uncertainty.R with FTM_ONLY <- TRUE
 
 PRETTY <- c(coniferfrac_full="Coniferous fraction", Bio_a_ha="Aboveground biomass",
             shannon_full="Tree-species diversity")

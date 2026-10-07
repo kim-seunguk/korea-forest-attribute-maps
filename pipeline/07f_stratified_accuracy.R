@@ -13,8 +13,11 @@
 # The script prints the distribution.
 #
 # Inputs : outputs/nfi8/{cv_folds.csv, m2_targets.csv} · data/interim/nfi8/rd_points.csv · data/interim/nfi8/plot_features_s2.csv
-# Output : outputs/nfi8/m6_stratified.csv (target,predset,model,fit_stratum,eval_stratum,scheme,point,n,var)
-#   source(...) runs the full pass; PILOT <- TRUE first for a quick shakedown.
+# Output : outputs/nfi8/m6_stratified<SUF>.csv (target,predset,model,fit_stratum,eval_stratum,scheme,point,n,var)
+#          SUF names the run: "" for both sets on their common sample, "_baseonly" and "_ftm" for the
+#          switches below, with "_PILOT" in front for a pilot.
+#   FTM_ONLY <- TRUE; source(here::here("pipeline", "07f_stratified_accuracy.R"))   # the delivered set
+#   source(...) alone runs both sets; PILOT <- TRUE first for a quick shakedown.
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(randomForest); library(foreach); library(doParallel) })
 source(here::here("R","paths.R")); source(here::here("R","run_utils.R")); source(here::here("R","eval_utils.R"))
@@ -27,6 +30,7 @@ K <- cfg$K; NTREE <- cfg$ntree
 TARGETS <- c("coniferfrac_full", "shannon_full", "Bio_a_ha")        # headline composition + ceiling + structure
 STRATA  <- c("planted", "natural")                                  # within-stratum + per-stratum eval (drop 'other')
 outd <- here("outputs", VERSION); dir.create(outd, showWarnings = FALSE, recursive = TRUE)
+SUF  <- if (PILOT) "_PILOT" else ""                                 # a pilot writes its own file
 
 tm <- run_timer("m6_stratified", version = VERSION, budget_min = if (PILOT) 25 else 150)
 # ---- 1. load + merge (same as 07a) ---------------------------------------------------------
@@ -52,9 +56,20 @@ DT[, FROR_lab := FROR_lab]
 cat(sprintf("labelled: planted=%d natural=%d other/NA=%d\n",
             sum(FROR_lab=="planted",na.rm=TRUE), sum(FROR_lab=="natural",na.rm=TRUE), sum(is.na(FROR_lab)|FROR_lab=="other")))
 fold_sp <- DT$fold_spatial
-# BASE_ONLY: drop the +FTM set so the complete.cases() mask below becomes the per-predset BASE
-# mask (n ~12,926) rather than the common-complete subset (n ~12,032). See 07a for the rationale.
-if (exists("BASE_ONLY") && isTRUE(BASE_ONLY)) { PSETS <- PSETS["clim_s2med"]; cat("BASE_ONLY: predsets = clim_s2med\n") }
+# The completeness mask below is built from the union of the sets in play. With both sets it is the
+# common subset of plots complete under both; each switch keeps one set and so widens the sample to
+# every plot complete under it, and writes its own file.
+#   BASE_ONLY  the no-map set alone                                                  -> *_baseonly
+#   FTM_ONLY   the delivered set alone. The pooled model must be the product's model, and the
+#              product's set includes stand origin (05a), so FROR is added as a predictor as well as
+#              being the stratifier. Within a stratum it is constant, so the stratum-specific models
+#              lose nothing.                                                          -> *_ftm
+if (exists("BASE_ONLY") && isTRUE(BASE_ONLY)) { PSETS <- PSETS["clim_s2med"]; SUF <- paste0(SUF, "_baseonly")
+                                                 cat("BASE_ONLY: predsets = clim_s2med\n") }
+if (exists("FTM_ONLY") && isTRUE(FTM_ONLY)) {
+  DT[, FROR := factor(as.character(FROR))]
+  PSETS <- list(full = unique(c(PSETS$full, "FROR"))); SUF <- paste0(SUF, "_ftm"); cat("FTM_ONLY: predsets = full (+FROR)\n")
+}
 all_pred <- unique(unlist(PSETS))
 run_banner("m6_stratified", PILOT, cfg, n=nrow(DT), extra=sprintf("targets=%d strata=%s", length(TARGETS), paste(STRATA,collapse="/")))
 
@@ -105,9 +120,9 @@ for (i in seq_along(TARGETS)) { tm$stage(sprintf("t:%s",TARGETS[i])); progress(i
 stopCluster(cl)
 
 # ---- 4. write + headline -------------------------------------------------------------------
-out <- rbindlist(rows); fwrite(out, file.path(outd,"m6_stratified.csv"))
-cat("\n===== stand origin: planted vs natural (spatial folds) =====\n")
-print(out[scheme=="spatial" & predset=="clim_s2med", .(target,model,fit_stratum,eval_stratum,point,n,var)], row.names=FALSE)
+out <- rbindlist(rows); fwrite(out, file.path(outd, sprintf("m6_stratified%s.csv", SUF)))
+cat(sprintf("\n===== stand origin: planted vs natural (spatial folds, predset %s) =====\n", names(PSETS)[1]))
+print(out[scheme=="spatial" & predset==names(PSETS)[1], .(target,model,fit_stratum,eval_stratum,point,n,var)], row.names=FALSE)
 cat("\nRange restriction: compare `var` planted vs natural (per target).\n")
 cat("Reliability: pooled model eval_stratum=natural vs planted `point`.\n")
 cat("Stratum model: model=within vs model=pooled(eval=same stratum) `point`.\n")

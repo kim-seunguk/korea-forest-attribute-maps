@@ -6,8 +6,11 @@ that the maps can be looked at without downloading them.
 | | |
 |---|---|
 | viewer | <https://ee-korea-forest-maps.projects.earthengine.app/view/korea-forest-maps> |
-| collection | `projects/ee-korea-forest-maps/assets/korea-forest-attributes` |
-| plot ids | `projects/ee-korea-forest-maps/assets/plot_ids_{base,ftm}` |
+| collection | `projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2` |
+| plot ids | `projects/ee-korea-forest-maps/assets/plot_ids_ftm_v2` |
+
+These are the version 2 assets. The version 1 collection, `korea-forest-attributes`, and its plot-id
+tables `plot_ids_base` and `plot_ids_ftm` stay online unchanged; nothing in this directory reads them.
 
 | file | what it is |
 |---|---|
@@ -16,18 +19,23 @@ that the maps can be looked at without downloading them.
 
 `pipeline/08e_publish_earthengine.py` is what creates the collection.
 
+`layers.json` is regenerated from the staged version 2 rasters when the collection is republished;
+until then it still lists the version 1 layers, including the `base_*` ones that version 2 does not
+carry. The generated block at the top of `viewer.js` is built from it and from
+`data/species_colors.csv`, and is replaced at the same time.
+
 ## What is published
 
-Twenty of the images are the deposited rasters, unchanged. Eight are the four attributes of the
-plot-index family, derived by `08e` from the deposited plot index and its lookup table — the same
-substitution `05c` performs, done from the archived inputs so that every layer here is reproducible
-from the archive alone.
+Fourteen images. Ten are the deposited rasters, unchanged. Four are the attributes of the plot-index
+family, derived by `08e` from the deposited plot index and its lookup table — the same substitution
+`05c` performs, done from the archived inputs so that every layer here is reproducible from the
+archive alone.
 
-They are derived rather than taken from `attributes_*/` for a reason. Those rasters carry a
-dominant-species legend built per tier from whichever species the reference library happened to
-contain, so the same code means a different species in each tier and a different species again in
-the delivered maps. The deposited lookup carries the published 39-class coding, so deriving from it
-puts both families in one code space, and one legend and one palette then serve both.
+They are derived rather than taken from `attributes_ftm/` for a reason. Those rasters carry a
+dominant-species legend built from whichever species the reference library happened to contain, so
+the same code means a different species there and in the delivered map. The deposited lookup carries
+the published 37-class coding, so deriving from it puts both families in one code space, and one
+legend and one palette then serve both.
 
 ## Display ranges
 
@@ -46,6 +54,7 @@ shared scale that shows as reaching further into both ends rather than being nor
 ## Species colours
 
 From `data/species_colors.csv`, the same table the figures are drawn from: a colour for each species
-named in the map figures' legends, and one shared colour for the rest. Clicking a cell reports the
-full 39-class name from `dominant_species_table.csv`, which also carries the per-class accuracy —
-the map is far more reliable for the common species than for the rare ones.
+named in the map figures' legends, and one shared colour for the rest. The palette keeps a row for
+each of the 39 class codes; two of them, 7 and 17, are unused in version 2, which trains 37 classes.
+Clicking a cell reports the class name from `dominant_species_table.csv`, which also carries the
+per-class accuracy — the map is far more reliable for the common species than for the rare ones.

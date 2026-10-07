@@ -14,7 +14,7 @@ if (!exists("WRITE_CLIP")) WRITE_CLIP <- FALSE     # TRUE -> also write boundary
 if (!exists("ENSURE_NODATA")) ENSURE_NODATA <- TRUE # set NoData=NaN on the delivered tifs (a float export can omit the tag)
 mapdir <- here("outputs", VERSION, sprintf("m8_maps_%s", RES)); stopifnot(dir.exists(mapdir))
 outd   <- here("outputs", VERSION)
-TIERS <- c("base","full"); REG <- c("coniferfrac","shannon","Bio_a_ha")
+TIERS <- "full"; REG <- c("coniferfrac","shannon","Bio_a_ha")     # "full" = the delivered predictor set (R/paths.R::FILE_TIER)
 
 # ---- NFI design-based reference (KFS 산림기본통계, 2020 basis; whole Korea) --------------------
 # Design-based (sample-expansion) area estimates, the leakage-free reference for the agreement check.
@@ -26,10 +26,10 @@ NFI_FOREST_HA  <- 6298000     # official total forest area (ha), whole Korea (20
 NFI_CONIFER_HA <- 2324000     # official conifer(침엽수림) area (ha) (2020 basis); cf. conifer-dominant mapped area
 
 # ---- boundary ---------------------------------------------------------------------------------
-# The totals below are computed inside the national boundary, because the export region is a lon/lat
-# box that reaches past the border and out to sea. This clips for the statistics only: the delivered
-# rasters are not clipped, and WRITE_CLIP is FALSE. Stage the S. Korea 시도 boundary (SGIS ctp_rvn)
-# under data/raw/boundaries/. To use another file set BOUNDARY_SHP <- "<path/to.shp>" before sourcing.
+# The totals below are computed inside the national boundary, because the covariate grid reaches
+# past the border and out to sea. This clips for the statistics only: the delivered rasters are not
+# clipped, and WRITE_CLIP is FALSE. Stage the S. Korea 시도 boundary (SGIS ctp_rvn) under
+# data/raw/boundaries/. To use another file set BOUNDARY_SHP <- "<path/to.shp>" before sourcing.
 # honor an explicit BOUNDARY_SHP override only if it points to a real file; otherwise auto-resolve
 # (guards against a stale BOUNDARY_SHP left in the session by an earlier run)
 if (!exists("BOUNDARY_SHP") || !is.character(BOUNDARY_SHP) || !file.exists(BOUNDARY_SHP)) {
@@ -54,7 +54,7 @@ for (tier in TIERS) {
   cf    <- clip(map_file(tier, "coniferfrac"))
   pa_ha <- prod(res(cf)) / 1e4                                              # pixel area (ha)
   fmask <- !is.na(cf)
-  forest_ha   <- as.numeric(global(fmask, "sum", na.rm=TRUE)) * pa_ha       # forest = valid (ESA-masked) pixels
+  forest_ha   <- as.numeric(global(fmask, "sum", na.rm=TRUE)) * pa_ha       # forest = valid (mapped) pixels
   conifer_ba  <- as.numeric(global(cf, "sum", na.rm=TRUE)) * pa_ha          # BA-fraction-weighted conifer area
   conifer_dom <- as.numeric(global(cf > 0.5, "sum", na.rm=TRUE)) * pa_ha    # conifer-dominant (>0.5) area
   for (tgt in REG) {
@@ -83,10 +83,12 @@ cat(sprintf("wrote m8_postproc_{stats,area}_%s.csv to %s\n", RES, outd))
 # ---- ensure every delivered GeoTIFF declares NoData = NaN -----------------------------------
 # A float32 export can omit the NoData tag, in which case a GIS renders the off-forest NaN background as if
 # it were data (terra reads NaN as NA regardless, so the stats above are unaffected — this is purely a
-# delivered-file fix for downstream GIS). Bakes NoData=NaN into each tif in m8_maps_<RES> and
-# m8_uncertainty_<RES>. Idempotent: files that already declare NoData are skipped. Run it after any
-# step that rewrites a raster. Prefers a Cloud-Optimized GeoTIFF (nodata + overviews, the delivery format); falls back
-# to a plain tiled GTiff if the COG driver is unavailable. Uses the GDAL already bundled with sf.
+# delivered-file fix for downstream GIS). Bakes NoData=NaN into each float tif in m8_maps_<RES> and
+# m8_uncertainty_<RES>. Idempotent: files that already declare NoData are skipped, which includes the
+# uint8 dominant-species map (nodata 255) and the int8 Shannon display raster (nodata -128). Run it
+# after any step that rewrites a raster. Prefers a Cloud-Optimized GeoTIFF (nodata + overviews, the
+# delivery format); falls back to a plain tiled GTiff if the COG driver is unavailable. Uses the GDAL
+# already bundled with sf.
 ensure_nodata_nan <- function(dirs) {
   for (d in dirs) {
     if (!dir.exists(d)) next

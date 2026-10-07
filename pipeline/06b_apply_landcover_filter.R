@@ -16,14 +16,14 @@
 # restores them, so a second run changes nothing.
 #
 #   direct prediction      outputs/nfi8/m8_maps_30m/*.tif and m8_uncertainty_30m/*.tif
-#   plot-index imputation  outputs/nfi8/index/imputation{_base,_ftm}.tif
-#                          and attributes{_base,_ftm}/spec30m_*.tif
+#   plot-index imputation  everything in outputs/nfi8/index/ — the index and the nearest-reference
+#                          distance layer beside it — and attributes_ftm/spec30m_*.tif
 #
-# The mask is re-aligned per file, cropping or extending as needed, so families on slightly
-# different extents are both handled.
+# The mask is re-aligned per file, resampling by nearest neighbour where the grids differ.
 #
-# Each file is read, masked, written to a temporary file and then swapped in atomically, which
-# avoids the read/write lock on Windows. Stale .ovr sidecars are dropped so overviews rebuild.
+# Each file is read, masked, written to a temporary file and then swapped in; the remove and the
+# rename are both checked, so a file a GIS still holds open stops the run instead of leaving the
+# stale master in place. Stale .ovr sidecars are dropped so overviews rebuild.
 #
 # ! Re-run this after any step that rewrites a raster. The filter is lost on overwrite.
 #   source(here::here("pipeline", "06b_apply_landcover_filter.R"))
@@ -37,7 +37,7 @@ CELL_HA <- 30 * 30 / 1e4
 L1_TIF  <- here("data", "interim", "landcover_mcee_30m", "landcover_L1_30m.tif")
 require_file(L1_TIF)
 
-## ---- build the delivered-grid remove-mask (1 = remove, 0 = keep) ------------------------------------
+## ---- build the remove-mask (1 = remove, 0 = keep) ------------------------------------
 L1    <- terra::rast(L1_TIF)
 # TRUE = remove. A cell the land-cover map does not cover comes out FALSE, which is what we want:
 # nothing is removed without evidence. The resampled masks further down need an explicit NA -> 0,
@@ -57,10 +57,10 @@ apply_one <- function(f, m) {
   # makes terra::mask complain about mismatched CRS on cells that already align.
   terra::crs(m) <- terra::crs(r)
   dt <- terra::datatype(r)[1]
-  # nodata by dtype: float -> NaN; uint8 class maps (domsp, V_*) -> 255; int8 (shannon_int) -> -128.
+  # nodata by dtype: float -> NaN; uint8 class maps (dominant species, V_*) -> 255; int8 (shannon_int) -> -128.
   # ⚠ MUST match the raster's real nodata: a uint8 map written with NAflag=-128 wraps to 255->128 and DROPS the
-  #    nodata tag, so the ocean (ex-255) becomes a valid code 128 and the whole grid reads as "valid" (corruption
-  #    seen on the already-finalized full domsp). uint8 -> 255 keeps re-filtering idempotent.
+  #    nodata tag, so the ocean (ex-255) becomes a valid code 128 and the whole grid reads as "valid".
+  #    uint8 -> 255 keeps re-filtering idempotent.
   na <- if (grepl("^FLT", dt)) NaN else if (dt == "INT1U") 255 else -128
   nb <- terra::global(r, "notNA")[1, 1]
   r2 <- terra::mask(r, m, maskvalue = 1, updatevalue = NA)
@@ -70,8 +70,8 @@ apply_one <- function(f, m) {
   terra::writeRaster(r2, tmp, overwrite = TRUE, datatype = dt, NAflag = na,
                      gdal = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"))
   rm(r, r2); gc(verbose = FALSE)
-  if (file.exists(f)) file.remove(f)
-  file.rename(tmp, f)
+  if (file.exists(f)) stopifnot(file.remove(f))        # a locked master must stop the run, not leave the old file in place
+  stopifnot(file.rename(tmp, f))
   for (ext in c(".ovr", ".aux.xml")) if (file.exists(paste0(f, ext))) file.remove(paste0(f, ext))
   cat(sprintf("  %-34s removed %s cells (%s ha)\n", basename(f),
               format(nb - n_after, big.mark = ","), format(round((nb - n_after) * CELL_HA), big.mark = ",")))
@@ -80,28 +80,25 @@ apply_one <- function(f, m) {
 ## ---- optional restriction: LC_ONLY = character vector of BASENAMES to filter -------------------
 # A repair run replaces a few layers and must not rewrite the rest. Every rewrite is another chance
 # to hit the tile-index damage this dataset has already seen, so re-filter only what changed.
-#   LC_ONLY <- c("base_conifer_fraction_30m.tif"); source(...)
+#   LC_ONLY <- c("ftm_conifer_fraction_30m.tif"); source(...)
 lc_keep <- function(v) if (exists("LC_ONLY")) v[basename(v) %in% LC_ONLY] else v
 
-## ---- A) direct-RF maps (delivered grid) ------------------------------------------------------------
-cat("[A] direct-RF maps (delivered grid):\n")
+## ---- A) direct-RF maps -------------------------------------------------------------------------------
+cat("[A] direct-RF maps:\n")
 direct_maps <- c(list.files(here("outputs", "nfi8", "m8_maps_30m"),        "\\.tif$", full.names = TRUE),
            list.files(here("outputs", "nfi8", "m8_uncertainty_30m"), "\\.tif$", full.names = TRUE))
 direct_maps <- lc_keep(direct_maps[!grepl("\\.tmp\\.tif$", direct_maps)])
 for (f in direct_maps) apply_one(f, mask0)
 
-## ---- B) plot-index imputation, BOTH tiers (different grid -> resample mask) ----------------------
-cat("[B] plot-index imputation (full + base; imputation grid; mask nearest-resampled):\n")
-imp_files <- c(here("outputs", "nfi8", "index", "imputation_ftm.tif"),
-               here("outputs", "nfi8", "index", "imputation_base.tif"),
-               # The distance layer describes the match in the index beside it, so it has to lose
-               # the same cells. Leaving it out gave it a wider extent than the index it describes.
-               here("outputs", "nfi8", "index", "nearest_reference_distance_ftm.tif"),
-               here("outputs", "nfi8", "index", "nearest_reference_distance_base.tif"),
-               list.files(here("outputs", "nfi8", "attributes_ftm"),      "^spec30m_.*\\.tif$", full.names = TRUE),
-               list.files(here("outputs", "nfi8", "attributes_base"), "^spec30m_.*\\.tif$", full.names = TRUE))
+## ---- B) plot-index imputation (the index, its distance layer, the decoded attributes) --------------
+cat("[B] plot-index imputation (index/ and attributes_ftm/; mask nearest-resampled where needed):\n")
+# The index directory is globbed rather than listed by name, so a layer added beside the index — the
+# nearest-reference distance layer describes the match in the index beside it and has to lose the
+# same cells — cannot be left out of the filter.
+imp_files <- c(list.files(here("outputs", "nfi8", "index"),          "\\.tif$", full.names = TRUE),
+               list.files(here("outputs", "nfi8", "attributes_ftm"), "^spec30m_.*\\.tif$", full.names = TRUE))
 imp_files <- lc_keep(imp_files[file.exists(imp_files) & !grepl("\\.tmp\\.tif$", imp_files)])
-# per-DISTINCT-grid resampled mask (the two tiers have different row counts); apply_one re-aligns per file.
+# one resampled mask per distinct grid; apply_one re-aligns per file.
 mask_cache <- list()
 mask_for <- function(r) {
   key <- paste(dim(r)[1:2], collapse = "x")

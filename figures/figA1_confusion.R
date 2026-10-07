@@ -3,22 +3,24 @@
 # Reads the 07d confusion matrix (observed x predicted counts) and draws a row-normalized heatmap
 # (each row = an observed species, cells = fraction predicted as each class), species labelled with
 # scientific names and ordered by observed abundance.
-#   source(here::here("figures","figA1_confusion.R"))          # as published
-#   TIER <- "full"; source(here::here("figures","figA1_confusion.R"))   # the FTM-added tier
+# This figure is not in the paper; it is kept as an optional view of what 07d writes.
+#   source(here::here("figures","figA1_confusion.R"))                      # the delivered set, spatial folds
+#   SCHEME <- "test"; source(here::here("figures","figA1_confusion.R"))    # the disjoint test set instead
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(ggplot2); library(patchwork) })
 margin <- ggplot2::margin
 source(here::here("figures","theme.R"))
 VERSION <- "nfi8"
-# The defaults reproduce the figure as published. Override any of the three before sourcing.
-if (!exists("TIER"))   TIER   <- "base"      # base | full  (predictor set)
+# The defaults draw the delivered set on the spatial folds. Override any of the three before sourcing.
+if (!exists("TIER"))   TIER   <- "full"      # full | base  (the delivered set, or the same set without the forest-type map)
 if (!exists("SCHEME")) SCHEME <- "spatial"   # spatial | test
-# SUF picks the evaluation SAMPLE, which is a different axis from TIER (TIER = predictor set):
-#   ""            = common subset, n = 12,032 / 2,348 (base and FTM-added comparable like for like)
-#   "_wholebase"  = every plot with a complete base predictor record, n = 12,926 / 2,521 (base predictor
-#                   set only; the manuscript standard). "whole", not "full", so it cannot be read as the
-#                   FTM-added predictor set.
-if (!exists("SUF"))    SUF    <- "_wholebase"
+# SUF picks the evaluation SAMPLE, which is a different axis from TIER (TIER = predictor set), and
+# names the 07d run that wrote the matrix:
+#   "_wholeftm"   = every plot with a complete record under the delivered set (07d with FTM_ONLY)
+#   "_wholebase"  = every plot with a complete record under the no-map set (07d with BASE_ONLY)
+#   ""            = the common subset of plots complete under both sets (07d with neither switch)
+# "whole", not "full", so the suffix cannot be read as a predictor set.
+if (!exists("SUF"))    SUF    <- "_wholeftm"
 outd <- here("outputs", VERSION)
 
 cmfile <- file.path(outd, sprintf("m4f_domsp_confusion_%s_%s%s.csv", TIER, SCHEME, SUF))
@@ -52,9 +54,9 @@ scinm  <- sci(cm$obs); genus <- sub(" .*$", "", scinm)
 family <- unname(g2f[genus]); order_ <- unname(f2o[family]); class_ <- unname(f2c[family])
 is_oth <- (scinm == "Other") | is.na(family)                   # 기타 or unknown-family -> forced last
 if (any(is_oth & scinm != "Other"))
-  message("figS1: no family for: ",  paste(unique(scinm[is_oth & scinm != "Other"]), collapse = ", "))
+  message("figA1: no family for: ",  paste(unique(scinm[is_oth & scinm != "Other"]), collapse = ", "))
 if (any(!is.na(family) & is.na(order_)))
-  message("figS1: no order for family: ", paste(unique(family[!is.na(family) & is.na(order_)]), collapse = ", "))
+  message("figA1: no order for family: ", paste(unique(family[!is.na(family) & is.na(order_)]), collapse = ", "))
 ord_kr <- cm$obs[order(is_oth, paste(class_, order_, family, scinm))]  # Class -> Order -> Family -> Genus -> species; Other last
 lab <- setNames(sci(ord_kr), ord_kr)
 long[, obs  := factor(obs,  levels = ord_kr, labels = lab[ord_kr])]

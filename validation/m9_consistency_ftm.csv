@@ -1,0 +1,17 @@
+metric,family,attribute,value,note
+variance_ratio,direct,coniferfrac,0.6634751572252873,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+variance_ratio,imputation,coniferfrac,1.0633925142987692,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+variance_ratio,direct,Bio_a_ha,0.3235207937678343,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+variance_ratio,imputation,Bio_a_ha,1.036020332406557,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+variance_ratio,direct,shannon,0.306764837719801,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+variance_ratio,imputation,shannon,1.1016494604511224,"Var(map)/Var(plots); 1 = field variance retained, <1 = smoothed toward the mean"
+plausibility_distance_median,plot_to_plot_baseline,"joint(coniferfrac,logBio,shannon)",0.0981585059429253,standardized units; nearest real plot of the same species
+plausibility_distance_p90,plot_to_plot_baseline,"joint(coniferfrac,logBio,shannon)",0.27174258255851247,standardized units; nearest real plot of the same species
+plausibility_distance_median,direct,"joint(coniferfrac,logBio,shannon)",0.08041291949100987,standardized units; nearest real plot of the same species
+plausibility_distance_p90,direct,"joint(coniferfrac,logBio,shannon)",0.20625045779199763,standardized units; nearest real plot of the same species
+plausibility_distance_median,imputation,"joint(coniferfrac,logBio,shannon)",0.0,"EXACTLY zero by construction — every cell IS a real plot; reported for completeness, not as a result"
+beyond_p90_of_plot_spacing,direct,"joint(coniferfrac,logBio,shannon)",0.0623,share of direct-map cells further from any real same-species plot than 90% of real plots are from each other
+bhattacharyya_domsp_marginal,direct,dominant species,0.9350649765957876,vs the NFI plot population
+bhattacharyya_domsp_marginal,imputation,dominant species,0.9967845338855839,vs the NFI plot population
+bhattacharyya_joint,direct,domsp x composition x biomass x diversity,0.6949308246218766,joint table vs the NFI plot population
+bhattacharyya_joint,imputation,domsp x composition x biomass x diversity,0.9891197480292393,joint table vs the NFI plot population

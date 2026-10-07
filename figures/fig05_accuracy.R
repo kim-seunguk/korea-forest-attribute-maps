@@ -1,7 +1,7 @@
 # fig05_accuracy.R — predicted against observed, for both product families.
 # ================================================================================================
 # Two rows, direct prediction and plot-index imputation, by three columns: coniferous fraction,
-# aboveground biomass and tree-species diversity. Base predictor set, spatial-block
+# aboveground biomass and tree-species diversity. The delivered predictor set, spatial-block
 # cross-validation, both rows drawn from the same set of plots so the comparison is like for like.
 #
 # Side by side the two families show the trade-off the dataset is built around. Direct prediction
@@ -11,8 +11,8 @@
 #
 # Each panel carries the 1:1 line, an OLS fit, and R2, RMSE and MBE, with %RMSE added for biomass.
 #
-# In : outputs/nfi8/m7_uncertainty_points.csv   (direct, spatially out-of-fold)
-#      outputs/nfi8/m4c_pred_points.csv         (imputation, base predictor set)
+# In : outputs/nfi8/m7_uncertainty_points_ftm.csv   (direct, spatially out-of-fold; 07g with FTM_ONLY)
+#      outputs/nfi8/m4c_pred_points.csv             (imputation; 07b, predset full)
 #
 #   source(here::here("figures", "fig05_accuracy.R"))
 # ================================================================================================
@@ -30,23 +30,23 @@ TARGETS <- list(
   list(key = "Bio_a_ha",         title = expression(bold("Aboveground biomass (Mg ha"^"-1"*")")), pct = TRUE,  lim = NULL),
   list(key = "shannon_full",     title = "Tree-species diversity (Shannon H′)", pct = FALSE, lim = NULL))
 
-## ---- both families' per-plot spatial-CV predictions (base predictor set) --------------------
-dir_f <- file.path(outd, "m7_uncertainty_points.csv")                  # direct spatial-OOF predictions, full base predictor set
+## ---- both families' per-plot spatial-CV predictions (the delivered predictor set) ------------
+dir_f <- file.path(outd, "m7_uncertainty_points_ftm.csv")              # direct spatial-OOF predictions, 07g with FTM_ONLY
 if (!file.exists(dir_f))
-  stop("this figure needs ", dir_f, " — re-run pipeline/07g_uncertainty.R first.")
+  stop("this figure needs ", dir_f, " — run pipeline/07g_uncertainty.R with FTM_ONLY <- TRUE first.")
 d_dir <- fread(dir_f)[target %in% c("coniferfrac_full", "Bio_a_ha", "shannon_full")]  # 07g cols: target/Plot_ID/pred/obs (no predset)
 d_dir <- d_dir[, .(route = "Direct prediction", target,
                    obs = suppressWarnings(as.numeric(obs)), pred = suppressWarnings(as.numeric(pred)))]
 imp_f <- file.path(outd, "m4c_pred_points.csv")
 if (!file.exists(imp_f))
   stop("this figure needs ", imp_f, " — run pipeline/07b_compare_families.R, which writes it.")
-d_imp <- fread(imp_f)[predset == "clim_s2med"]                          # clim_s2med = base predictor set
+d_imp <- fread(imp_f)[predset == "full"]                                # full = the delivered set, 07b's token
 d_imp <- d_imp[, .(route = "Plot-index imputation", target,
                    obs = suppressWarnings(as.numeric(obs)), pred = suppressWarnings(as.numeric(pred)))]
 D <- rbind(d_dir, d_imp)[is.finite(obs) & is.finite(pred)]
 
 r2  <- function(o, p) 1 - sum((o - p)^2) / sum((o - mean(o))^2)
-fmt <- function(x, d = 2) formatC(x, format = "f", digits = d)
+fmt <- function(x, d = 2) formatC(ifelse(abs(x) < 0.5 * 10^-d, 0, x), format = "f", digits = d)   # no "-0.00"
 # Conventional panel labelling: a bold lowercase letter (a to f) at each panel's top left for
 # citation, the attribute named once as a shared column title on the top row, and the method named
 # in a row header. The panel statistics sit in the empty bottom-right corner.
@@ -81,4 +81,4 @@ fig <- row_hdr("Direct prediction")     / (dP[[1]] | dP[[2]] | dP[[3]]) /
 outdir <- here("figures","rendered"); dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 fn <- file.path(outdir, "fig05_accuracy.png")
 save_png_pdf(fn, fig, width = 10.5, height = 7.8, dpi = 600)
-cat(sprintf("wrote %s  (2x3 a–f: direct vs plot-index imputation x 3 continuous targets; base, spatial-CV)\n", fn))
+cat(sprintf("wrote %s  (2x3 a–f: direct vs plot-index imputation x 3 continuous targets; the delivered set, spatial-CV)\n", fn))

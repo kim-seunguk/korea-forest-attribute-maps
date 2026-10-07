@@ -1,17 +1,24 @@
 # 07g_uncertainty.R — build the uncertainty layers and test whether they track real error.
 # ============================================================================================
-# For the delivered base model, on the frozen spatial folds, this attaches a per-prediction
+# For the direct-prediction model, on the frozen spatial folds, this attaches a per-prediction
 # uncertainty and then tests whether it is calibrated: does a higher predicted uncertainty actually
 # correspond to a larger error? A layer that fails this test can still rank locations, but it cannot
 # be read as an error bar, and the dataset says so.
 #   - regression (3 continuous targets: conifer fraction, AG biomass, Shannon): spatial-OOF pred/obs + uncertainty
-#     = SD across RF trees (predict.all); calibration cor(SD, |error|) computed for conifer fraction (the figure).
-#   - classification (dom species):  confidence = vote-probability margin (top1-top2); check accuracy by margin decile.
-#   Per-plot pred/obs for all three continuous targets feed the predicted-against-observed panels (base predictor set).
+#     = SD across RF trees (predict.all); calibration cor(SD, |error|) per target, binned by decile.
+#   - classification (dom species):  confidence = vote-probability margin (top1-top2); accuracy by margin decile.
+#   Per-plot pred/obs for all three continuous targets feed the predicted-against-observed panels.
+#
+# FTM_ONLY <- TRUE runs the delivered predictor set, 05a's (climate and terrain, Sentinel-2, the
+# forest-type map attributes and stand origin), on its own complete-case sample and writes *_ftm
+# files. The delivered uncertainty layers are that model's, so the calibration figure, 07h and 07i
+# read the *_ftm files. Without the switch the same set minus the forest-type map is scored, for
+# comparison, into the unsuffixed files.
 #
 # Inputs : outputs/nfi8/{cv_folds.csv,m2_targets.csv} · data/interim/nfi8/rd_points.csv · data/interim/nfi8/plot_features_s2.csv
-# Output : outputs/nfi8/m7_uncertainty_points.csv (per-plot) + m7_calibration.csv (binned)
-#   source(...) runs the full pass; PILOT <- TRUE first for a quick shakedown.
+# Output : outputs/nfi8/m7_uncertainty_points<SUF>.csv (per-plot) + m7_calibration<SUF>.csv (binned)
+#   FTM_ONLY <- TRUE; source(here::here("pipeline", "07g_uncertainty.R"))   # the delivered set
+#   source(...) alone scores the no-map comparison; PILOT <- TRUE first for a quick shakedown.
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(randomForest); library(foreach); library(doParallel) })
 source(here::here("R","paths.R")); source(here::here("R","run_utils.R")); source(here::here("R","eval_utils.R"))
@@ -22,6 +29,7 @@ SEED <- 7214L; MIN_SP <- 20L; NBIN <- 10L
 cfg <- run_sizing(VERSION, "m7_uncertainty", pilot=PILOT, budget_min=if (PILOT) 20 else 120)
 K <- cfg$K; NTREE <- cfg$ntree
 outd <- here("outputs", VERSION)
+SUF  <- if (PILOT) "_PILOT" else ""                                # a pilot writes its own files
 
 tm <- run_timer("m7_uncertainty", version=VERSION, budget_min=if (PILOT) 20 else 120)
 tm$stage("load")
@@ -37,7 +45,13 @@ preds_clim <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE
 s2_med <- intersect(names(DT), S2_BAND_NAMES)                      # the 42 declared bands (R/paths.R)
 if (sum(complete.cases(DT[, ..s2_med])) < 10000L)                  # guard: stale/mid-copy inputs -> abort loudly, not silent small-n
   stop("merged S2 completeness < 10k — inputs look stale/mid-update; Restart R + re-read files.", call. = FALSE)
-PREDS <- c(preds_clim, s2_med)                                    # production no-forest-type map set
+PREDS <- c(preds_clim, s2_med)                                    # without the forest-type map: the comparison
+if (exists("FTM_ONLY") && isTRUE(FTM_ONLY)) {                     # the delivered set, typed as in 05a
+  DT[, V_VG := factor(as.character(V_VG))]; DT[, FROR := factor(as.character(FROR))]
+  for (v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])
+  PREDS <- c(preds_clim, s2_med, V_PREDICTORS, "FROR"); SUF <- paste0(SUF, "_ftm")
+  cat("FTM_ONLY: predictors = climate/terrain + Sentinel-2 + V_VG/V_DC/V_DN/FROR\n")
+}
 REG_TS <- c("coniferfrac_full", "Bio_a_ha", "shannon_full")       # coniferous fraction, biomass, Shannon H'
 CLS_T  <- "domsp_full"
 DT[[CLS_T]] <- as.character(DT[[CLS_T]]); rare <- names(which(table(DT[[CLS_T]]) < MIN_SP))
@@ -48,7 +62,7 @@ run_banner("m7_uncertainty", PILOT, cfg, n=nrow(DT),
 
 tm$stage("cluster"); cl <- register_cluster(16L)
 # ---- regression: spatial-OOF pred/obs + per-tree SD, for every continuous target --------------
-# The three continuous targets shown as predicted against observed in the figure, all on the base
+# The three continuous targets shown as predicted against observed in the figure, all on the same
 # predictor set so they share identical predictors. The reliability curves are computed for each of
 # them, because the weak ones are where a trustworthy uncertainty layer matters most.
 tm$stage("reg")
@@ -94,8 +108,8 @@ setDT(reg); setDT(cls)                                            # foreach .com
 fwrite(rbind(
   reg[, .(target, Plot_ID, pred=round(pred,4), obs=round(obs,4), uncertainty=round(tree_sd,4), err=round(abs_err,4))],
   cls[, .(target=CLS_T, Plot_ID, pred, obs, uncertainty=round(margin,4), err=round(1-correct,4))]),
-  file.path(outd,"m7_uncertainty_points.csv"))
-fwrite(rbind(reg_cal, cls_cal, fill=TRUE), file.path(outd,"m7_calibration.csv"))
+  file.path(outd, sprintf("m7_uncertainty_points%s.csv", SUF)))
+fwrite(rbind(reg_cal, cls_cal, fill=TRUE), file.path(outd, sprintf("m7_calibration%s.csv", SUF)))
 cat("\nREG cor(tree_SD, |err|) per target (positive => uncertainty tracks error = calibrated):\n")
 print(round(reg_cor, 3))
 print(reg_cal[, .(target, bin, mean_uncert, mean_abs_err, n)], row.names=FALSE)

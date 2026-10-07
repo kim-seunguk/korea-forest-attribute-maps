@@ -1,0 +1,7 @@
+target,predset,scheme,r2,rmse,pct_rmse,mbe,n
+coniferfrac_full,full,spatial,0.7197,0.1829,47.9,0.009,13023
+coniferfrac_full,full,test,0.6978,0.1949,40.5,-0.0105,2989
+shannon_full,full,spatial,0.3217,0.4198,36.3,-0.0049,13023
+shannon_full,full,test,0.3496,0.4213,40.3,0.0598,2989
+Bio_a_ha,full,spatial,0.3131,63.9054,36.7,0.4933,13013
+Bio_a_ha,full,test,0.3231,64.4434,39.2,8.0136,2986

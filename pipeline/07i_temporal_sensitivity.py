@@ -6,11 +6,13 @@ measured at the start of the period is therefore matched to imagery that partly 
 reports accuracy separately for each survey year so that any trend across the period is visible
 rather than assumed absent.
 
-Reuses the per-plot spatially out-of-fold predictions; no model is refitted.
+Reuses the per-plot spatially out-of-fold predictions 07g writes; no model is refitted.
+NFIMAP_TIER picks the 07g run: ftm (the default) reads the delivered set's *_ftm files, base reads
+the unsuffixed files of the comparison run without the forest-type map.
 
-INPUT  data/interim/nfi8/plot_year.csv          (Plot_ID, Survey_year)
-       outputs/nfi8/m7_uncertainty_points.csv   (target, Plot_ID, pred, obs, ...)
-OUTPUT outputs/nfi8/m8_temporal_sensitivity.csv (target, survey_year, metric, value, n)
+INPUT  data/interim/nfi8/plot_year.csv               (Plot_ID, Survey_year)
+       outputs/nfi8/m7_uncertainty_points<SUF>.csv   (target, Plot_ID, pred, obs, ...)
+OUTPUT outputs/nfi8/m8_temporal_sensitivity<SUF>.csv (target, survey_year, metric, value, n)
 RUN    python pipeline/07i_temporal_sensitivity.py
 """
 import os, csv, io
@@ -19,10 +21,14 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
 OUT = os.path.join(ROOT, 'outputs', 'nfi8')
+TIER = os.environ.get('NFIMAP_TIER', 'ftm')
+if TIER not in ('base', 'ftm'):
+    raise SystemExit('NFIMAP_TIER must be "ftm" (the delivered set) or "base" (the run without the forest-type map)')
+SUF = '_ftm' if TIER == 'ftm' else ''
 
 year = {r['Plot_ID']: r['Survey_year']
         for r in csv.DictReader(io.open(os.path.join(ROOT, 'data', 'interim', 'nfi8', 'plot_year.csv'), encoding='utf-8-sig'))}
-pts = list(csv.DictReader(io.open(os.path.join(OUT, 'm7_uncertainty_points.csv'), encoding='utf-8-sig')))
+pts = list(csv.DictReader(io.open(os.path.join(OUT, f'm7_uncertainty_points{SUF}.csv'), encoding='utf-8-sig')))
 
 CONT = {'coniferfrac_full', 'Bio_a_ha', 'shannon_full'}           # R2 ; domsp -> accuracy
 rows = []
@@ -47,7 +53,7 @@ for T in ['coniferfrac_full', 'Bio_a_ha', 'shannon_full', 'domsp_full']:
             acc = np.mean([x['obs'] == x['pred'] for x in g])
             rows.append(dict(target=T, survey_year=y, metric='accuracy', value=round(float(acc), 4), n=len(g)))
 
-dst = os.path.join(OUT, 'm8_temporal_sensitivity.csv')
+dst = os.path.join(OUT, f'm8_temporal_sensitivity{SUF}.csv')
 with io.open(dst, 'w', encoding='utf-8', newline='') as f:
     w = csv.DictWriter(f, fieldnames=['target', 'survey_year', 'metric', 'value', 'n']); w.writeheader()
     for r in rows: w.writerow(r)

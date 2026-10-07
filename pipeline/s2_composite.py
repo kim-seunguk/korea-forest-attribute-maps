@@ -1,17 +1,15 @@
 """s2_composite.py — the Sentinel-2 seasonal composite, defined once.
 
-Two stages need this image and they must agree exactly. 03a exports it wall to wall, which is what
-stage 05 predicts onto; 03e samples it at the inventory plots, which is what the models are trained
-on. If the two ever described the bands differently the models would be trained on one thing and
-applied to another, and nothing in the outputs would say so. So both build the image from here
-rather than each carrying its own copy.
+03a exports this image onto the product grid. That raster is what stage 05 predicts onto and, once
+03b and 03c have put it on disk, what 03e reads the training features from at the plots. So the
+composite is described in one place, here, and nothing else on the Earth Engine side carries its
+own copy of the band definitions.
 
 This is a shared definition, not a pipeline stage — it reads nothing and writes nothing.
 
 The band names it produces are season-major: spring's fourteen, then summer's, then fall's. That is
-the physical order of the exported raster, and R/… stages label the raster with it. The plot table
-that 03e exports is not in that order, because Earth Engine's table export sorts its properties
-alphabetically; downstream code selects those columns by name.
+the physical order of the exported raster. R/paths.R holds the same names for the R side, which
+labels the raster with them.
 """
 import ee
 
@@ -24,14 +22,20 @@ S2_BANDS = BANDS + INDICES
 # (1996) NDWI, which pairs 0.86 um with 1.24 um rather than B11 (1.61 um). The internal label stays
 # NDWI to match the existing feature tables and models; it is reported and deposited as NDMI.
 
-SEASONS = {'spring': ('-04-01', '-05-31'),
-           'summer': ('-06-01', '-08-31'),
-           'fall':   ('-09-01', '-10-31')}
+# Season windows. filterDate's end date is exclusive, so each end is the first day after the season:
+# spring is April and May, summer June to August, fall September and October.
+SEASONS = {'spring': ('-04-01', '-06-01'),
+           'summer': ('-06-01', '-09-01'),
+           'fall':   ('-09-01', '-11-01')}
 YEARS = [2021, 2022, 2023, 2024, 2025]      # the NFI-8 measurement period
 
 # Cloud Score+ threshold. The monsoon leaves few clear scenes, and a stricter cut empties the summer
 # composite over parts of the country.
 CS_THRESHOLD = 0.60
+
+# EVI is computed on the integer scale of S2_SR_HARMONIZED (reflectance x 10,000), so the soil term
+# L = 1 of the reflectance-scale formula is 10,000 here.
+EVI_L = 10000
 
 BAND_NAMES = [f's2_{season}_{band}' for season in SEASONS for band in S2_BANDS]   # 42, season-major
 
@@ -43,9 +47,9 @@ def add_indices(img):
         img.normalizedDifference(['B8', 'B4']).rename('NDVI'),
         img.normalizedDifference(['B8', 'B11']).rename('NDWI'),
         img.normalizedDifference(['B8', 'B5']).rename('NDRE'),
-        img.expression('2.5*((N-R)/(N+6*R-7.5*B+1))',
+        img.expression('2.5*((N-R)/(N+6*R-7.5*B+L))',
                        {'N': img.select('B8'), 'R': img.select('B4'),
-                        'B': img.select('B2')}).rename('EVI')])
+                        'B': img.select('B2'), 'L': EVI_L}).rename('EVI')])
 
 
 def seasonal_median(region):

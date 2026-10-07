@@ -10,23 +10,19 @@
 #       table to exactly the value the attribute raster holds at that cell. Mismatches must be 0.
 #   (3) coverage: the index raster must have a non-zero, plausible number of forest cells.
 #
-# Both delivered tiers carry an index raster, and each needs checking: the mistake this catches is
-# not tier-specific. Run it once per tier, after 05c.
-#   IMPUTE_TIER <- "base"   # omit for the default "full"
+# Run it after 05c, on the delivered index raster.
 #   source(here::here("pipeline", "07m_verify_index_alignment.R"))
 # ------------------------------------------------------------------------------------------------
 N_SAMPLE <- 50000L    # random non-NA cells to round-trip
 
 suppressPackageStartupMessages({ library(here); library(terra); library(data.table) })
 source(here::here("R", "paths.R"))
-if (!exists("IMPUTE_TIER")) IMPUTE_TIER <- "full"
-stopifnot(IMPUTE_TIER %in% c("base", "full"))
-.tsuf  <- tier_suffix(IMPUTE_TIER)                  # "_base" | "_ftm"; see R/paths.R
+.tsuf  <- tier_suffix("full")                       # "_ftm", the suffix 05b wrote; see R/paths.R
 outd   <- here("outputs", VERSION)
 attr_d <- file.path(outd, sprintf("attributes%s", .tsuf))
 ok_all <- TRUE
 say <- function(...) cat(sprintf(...), "\n")
-say("verifying tier '%s'", IMPUTE_TIER)
+say("verifying imputation%s.tif against attributes%s/", .tsuf, .tsuf)
 
 # ---- (1) plot-table invariant -----------------------------------------------------------------
 ref <- fread(require_file(file.path(outd, "models", sprintf("train_reference%s.csv", .tsuf))), encoding = "UTF-8")
@@ -82,5 +78,5 @@ out <- data.table(check = c("train_ref_invariant", "legend_match", "roundtrip_vv
 vdir <- file.path(outd, "validation"); dir.create(vdir, showWarnings = FALSE, recursive = TRUE)
 fwrite(out, file.path(vdir, sprintf("verify_index_alignment%s.csv", .tsuf)), bom = TRUE)
 
-cat(sprintf("\n==== verify_index_alignment [%s]: %s ====\n", IMPUTE_TIER, if (ok_all) "PASS" else "FAIL"))
+cat(sprintf("\n==== verify_index_alignment%s: %s ====\n", .tsuf, if (ok_all) "PASS" else "FAIL"))
 if (!ok_all) cat(sprintf("  Investigate before trusting outputs/%s/attributes%s.\n", VERSION, .tsuf))

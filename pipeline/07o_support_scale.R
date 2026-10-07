@@ -14,10 +14,12 @@
 #   handful of sparse units carry the whole statistic. The guard is exposed as an output column
 #   rather than fixed, so a reader can see what any choice of it would have given.
 #
-# In  : outputs/<VERSION>/m4a_pred_points.csv  (per-plot spatial-CV out-of-fold obs/pred, direct route)
-#       outputs/<VERSION>/cv_folds.csv         (Plot_ID, UTMK_X, UTMK_Y in EPSG:5179 metres)
-# Out : outputs/<VERSION>/m11_support_scale.csv + m11_support_scale.png
-#   source(here::here("pipeline", "07o_support_scale.R"))     # light, seconds
+# In  : outputs/<VERSION>/m4a_pred_points<IN_SUF>.csv  (per-plot spatial-CV out-of-fold obs/pred, direct route)
+#       outputs/<VERSION>/cv_folds.csv                 (Plot_ID, UTMK_X, UTMK_Y in EPSG:5179 metres)
+# Out : outputs/<VERSION>/m11_support_scale<SUF>.csv + m11_support_scale<SUF>.png
+#   FTM_ONLY <- TRUE; source(here::here("pipeline", "07o_support_scale.R"))   # the delivered set: reads the
+#       *_ftmonly run of 07a and writes *_ftm, the curve the dataset documentation quotes. Light, seconds.
+#   source(...) alone reads the six-set ladder, the unsuffixed m4a_pred_points table, for both predictor sets.
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table) })
 source(here::here("R", "paths.R")); source(here::here("R", "run_utils.R")); source(here::here("R", "eval_utils.R"))
@@ -55,23 +57,29 @@ NPERM     <- 200L                            # permutation control repeats
 
 # ---- reportability: let the bootstrap interval decide, not a hand-picked threshold ---------------
 # Rule: do not report a support whose 95% bootstrap CI is wider than CI_WIDTH_MAX.
-# Basis: the smallest effect this curve is used to claim is the plot-to-20 km gain in biomass, about
-#   +0.135. An interval wider than that cannot resolve the effect it is meant to show, and 0.15 is
-#   the round number just above it. One condition then cuts both pathologies: the coarse end, where
-#   100 km leaves 20 units, and an over-strict guard in the cluster range.
-# ! Name the borderline cases rather than hiding them: biomass at 20 km sits just under the threshold.
-#   ci_width is always written out, so a reader can re-cut at a different threshold.
+# Basis: the smallest effect this curve is used to claim is the gain in biomass from plot level to
+#   the regional range. An interval wider than that gain cannot resolve the effect it is meant to
+#   show, and 0.15 is the round number just above it. One condition then cuts both pathologies: the
+#   coarse end, where 100 km leaves a handful of units, and an over-strict guard in the cluster range.
+# ! Borderline cases are not hidden: ci_width is always written out, so a reader can re-cut at a
+#   different threshold.
 CI_WIDTH_MAX <- 0.15
 NBOOT     <- 1000L
 TARGETS   <- c("coniferfrac_full", "shannon_full", "Bio_a_ha")   # continuous only; a mean of classes is meaningless
-PSETS     <- c("clim_s2med", "full")                             # base / FTM-added
+PSETS     <- c("clim_s2med", "full")                             # without / with the forest-type map
+# FTM_ONLY: the delivered set on its own complete-case sample, read from 07a's FTM_ONLY run
+# (*_ftmonly) and written to *_ftm. The default run reads the six-set ladder, whose common subset
+# keeps only the plots complete under every set.
+FTM    <- exists("FTM_ONLY") && isTRUE(FTM_ONLY)
+IN_SUF <- if (FTM) "_ftmonly" else ""; SUF <- if (FTM) "_ftm" else ""
+if (FTM) PSETS <- "full"
 outd <- here("outputs", VERSION)
 
 tm <- run_timer("m11_support_scale", version = VERSION, budget_min = 10)
 
 # ---- 1. load: per-plot out-of-fold predictions + coordinates ------------------------------------
 tm$stage("load")
-pp <- fread(require_file(file.path(outd, "m4a_pred_points.csv")), colClasses = list(character = "Plot_ID"))
+pp <- fread(require_file(file.path(outd, sprintf("m4a_pred_points%s.csv", IN_SUF))), colClasses = list(character = "Plot_ID"))
 fo <- fread(require_file(file.path(outd, "cv_folds.csv")),        colClasses = list(character = "Plot_ID"))
 pp <- pp[target %in% TARGETS & predset %in% PSETS]
 pp[, `:=`(obs = as.numeric(obs), pred = as.numeric(pred))]        # stored as character: the file also holds classification targets
@@ -126,11 +134,9 @@ for (ps in PSETS) for (tg in TARGETS) {
     # construction; it costs three rows.
     a <- aggregate_to(d, L, mp)
     if (nrow(a) < 3L) next
-    # ! Fix the seed here. bci() resamples without one, so the interval width moves in the third or
-    #   fourth decimal between runs. Elsewhere that is harmless because intervals are not reported;
-    #   here the width decides the admissible flag, and a rule that decides what gets reported has to
-    #   be reproducible.
-    set.seed(SEED)
+    # The interval width decides the admissible flag, and a rule that decides what gets reported has
+    # to be reproducible: bci() fixes its own seed and restores the RNG state afterwards, and the
+    # permutation control below is seeded here.
     ci <- bci(a$o, a$p, r2, NBOOT)
     # Control: shuffle the predictions nationally, then run the same aggregation. This is the null
     # distribution of the R2 that aggregation alone produces.
@@ -161,11 +167,11 @@ for (ps in PSETS) for (tg in TARGETS) {
   }
 }
 out <- rbindlist(rows)
-fwrite(out, file.path(outd, "m11_support_scale.csv"))
+fwrite(out, file.path(outd, sprintf("m11_support_scale%s.csv", SUF)))
 
 # ---- 4. consistency gate: L=0 must equal the plot-level point in m4a_ladder.csv -------------------
 tm$stage("gate")
-lad <- fread(require_file(file.path(outd, "m4a_ladder.csv")))
+lad <- fread(require_file(file.path(outd, sprintf("m4a_ladder%s.csv", IN_SUF))))
 ref <- lad[scheme == "spatial" & predset %in% PSETS & target %in% TARGETS, .(target, predset, point)]
 chk <- merge(out[support_km == 0, .(target, predset, r2)], ref, by = c("target", "predset"))
 chk[, delta := round(r2 - point, 4)]
@@ -177,7 +183,7 @@ cat("gate OK — plot-level R² reproduces m4a_ladder.csv within 0.002\n")
 
 # ---- 5. figure -----------------------------------------------------------------------------------
 tm$stage("figure")
-png(file.path(outd, "m11_support_scale.png"), width = 1500, height = 760, res = 150)
+png(file.path(outd, sprintf("m11_support_scale%s.png", SUF)), width = 1500, height = 760, res = 150)
 op <- par(mfrow = c(1, length(PSETS)), mar = c(4.6, 4.2, 3.4, 0.8))
 # The figure draws one series only, so that the cluster range and the regional range form a single
 # continuous curve. The others stay in the CSV under the min_plots column.
@@ -187,7 +193,7 @@ cols <- c(coniferfrac_full = "#1b7837", shannon_full = "#762a83", Bio_a_ha = "#b
 for (ps in PSETS) {
   plot(NA, xlim = range(xs), ylim = c(-0.55, 1), log = "x", xaxt = "n",
        xlab = "Aggregation support (km)", ylab = expression(R^2),
-       main = sprintf("%s", ifelse(ps == "clim_s2med", "base (S2 + climate + terrain)", "FTM-added")))
+       main = ifelse(ps == "clim_s2med", "without the forest-type map", "the delivered predictor set"))
   axis(1, at = xs, labels = ifelse(SUPPORTS == 0, "plot\n(30 m)", SUPPORTS), cex.axis = .8)
   abline(h = 0, col = "grey70", lty = 2)
   # The boundary between the two ranges. Left of it, averaging subplots of one cluster removes
@@ -225,19 +231,19 @@ for (ps in PSETS) {
 }
 par(op); dev.off()
 
-cat("\n===== HEADLINE: R² by aggregation support (min_plots = 2) =====\n")
+cat(sprintf("\n===== HEADLINE: R² by aggregation support (min_plots = %d) =====\n", MIN_PLOTS_SET[1]))
 print(dcast(out[min_plots == MIN_PLOTS_SET[1]], target + predset ~ support_km, value.var = "r2"),
       row.names = FALSE)
 cat("\nRMSE in original units (cannot be inflated by aggregation the way R² can):\n")
 print(dcast(out[min_plots == MIN_PLOTS_SET[1]], target + predset ~ support_km, value.var = "rmse"),
       row.names = FALSE)
-cat("\nn_units (min_plots = 2, base predset):\n")
+cat(sprintf("\nn_units (min_plots = %d, predset %s):\n", MIN_PLOTS_SET[1], PSETS[1]))
 print(dcast(out[min_plots == MIN_PLOTS_SET[1] & predset == PSETS[1]], target ~ support_km,
             value.var = "n_units"), row.names = FALSE)
 cat(sprintf("\n95%% bootstrap CI width (report only where <= %.2f):\n", CI_WIDTH_MAX))
 print(dcast(out[min_plots == MIN_PLOTS_SET[1]], target + predset ~ support_km, value.var = "ci_width"),
       row.names = FALSE)
-cat("\nreportable support range per target (min_plots = 2, FTM tier):\n")
+cat(sprintf("\nreportable support range per target (min_plots = %d, predset full):\n", MIN_PLOTS_SET[1]))
 for (tg in TARGETS) {
   d <- out[min_plots == MIN_PLOTS_SET[1] & predset == "full" & target == tg & admissible == 1L]
   if (!nrow(d)) { cat(sprintf("  %-18s none\n", tg)); next }
@@ -249,7 +255,7 @@ for (tg in TARGETS) {
 }
 cat("\nsensitivity — same curve requiring a complete cluster (>=4 plots per unit):\n")
 print(dcast(out[min_plots == 4L], target + predset ~ support_km, value.var = "r2"), row.names = FALSE)
-cat(sprintf("\nwrote m11_support_scale.csv (%d rows) + m11_support_scale.png\n", nrow(out)))
+cat(sprintf("\nwrote m11_support_scale%s.csv (%d rows) + m11_support_scale%s.png\n", SUF, nrow(out), SUF))
 tm$done(n = nrow(DT), params = sprintf("supports=%s min_plots=%s nperm=%d nboot=%d",
                                        paste(SUPPORTS, collapse = "/"),
                                        paste(MIN_PLOTS_SET, collapse = "+"), NPERM, NBOOT))

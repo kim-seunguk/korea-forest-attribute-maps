@@ -4,17 +4,16 @@ The archive is the citable copy. This is the one people can open: it ingests the
 ImageCollection, so a reader can look at them in a browser and use them in Earth Engine without
 downloading several gigabytes.
 
-Everything published here comes from the deposit, and only from the deposit. The twenty deposited
+Everything published here comes from the deposit, and only from the deposit. The ten deposited
 rasters are staged as they are. The four attributes of the plot-index family are DERIVED here, by
 substituting each cell's plot index with that plot's value from the deposited lookup table — the
 same operation 05c performs, done from the archived inputs so that every layer in the viewer is
 reproducible from the archive alone.
 
-Deriving rather than uploading outputs/nfi8/attributes_*/ is not a convenience. Those rasters carry
-a dominant-species legend of their own, built per tier from whatever species the reference library
-happened to contain (141 classes in base, 129 in ftm). Their codes therefore mean different species
-in each tier, and different species again from the delivered 39-class maps. The deposited lookup
-carries dominant_species_code in the published 39-class coding, so deriving from it puts both
+Deriving rather than uploading outputs/nfi8/attributes_ftm/ is not a convenience. Those rasters carry
+a dominant-species legend of their own, built from whatever species the reference library happened
+to contain (139 classes), so their codes mean different species from the delivered 37-class map. The
+deposited lookup carries dominant_species_code in the published coding, so deriving from it puts both
 families in one code space and lets one legend and one palette serve both.
 
 The manifest is built from `data_records.csv`, which 08c writes by opening the rasters themselves.
@@ -35,9 +34,13 @@ CONFIGURE  Both are yours, and neither is in this repository:
     EE_PROJECT    the Earth-Engine-enabled Cloud project the assets live under
     GCS_BUCKET    a Cloud Storage bucket in the same project, for staging
 
-IN   outputs/nfi8/_deposit_v1/            the verified deposit, and its data_records.csv
-OUT  outputs/nfi8/_ee_staging/*.tif       the derived plot-index attribute rasters
-     outputs/nfi8/_ee_manifests/*.json    one ingestion manifest per image
+IN   outputs/nfi8/_deposit_v2/              the verified deposit, and its data_records.csv
+OUT  outputs/nfi8/_ee_staging_v2/*.tif      the derived plot-index attribute rasters
+     outputs/nfi8/_ee_manifests_v2/*.json   one ingestion manifest per image
+
+Version 2 of the dataset goes into a collection of its own, korea-forest-attributes-v2, with its own
+plot-id table, plot_ids_ftm_v2. Nothing here names the version 1 collection or its tables, so they
+stay online as they are.
 
 RUN  python pipeline/08e_publish_earthengine.py            # derive and write the manifests only
      python pipeline/08e_publish_earthengine.py --run      # create the bucket, stage, ingest
@@ -63,11 +66,13 @@ import rasterio
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
-DEPOSIT = os.path.join(ROOT, 'outputs', 'nfi8', '_deposit_v1')
-STAGING = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_staging')
-MANIFESTS = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_manifests')
+DEPOSIT = os.path.join(ROOT, 'outputs', 'nfi8', '_deposit_v2')
+STAGING = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_staging_v2')
+MANIFESTS = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_manifests_v2')
 
-COLLECTION = 'korea-forest-attributes'
+COLLECTION = 'korea-forest-attributes-v2'
+TIERS = ('ftm',)                    # the predictor set the deposit carries; its token is in every file name
+TABLE = 'plot_ids_%s_v2'            # the plot-id table per predictor set, read by the viewer
 
 # The four attributes, as they are named in the delivered files and as they are carried in the
 # deposited lookup table. dtype and nodata follow the delivered direct maps, so the two families
@@ -144,7 +149,7 @@ def derive(tier):
             print('  %-42s already staged' % os.path.basename(dst))
             continue
         # index 0 is unused, so slot 0 carries the nodata value and an empty cell resolves to it.
-        # A few plots have no biomass recorded; they keep nodata rather than becoming a zero.
+        # A plot with an empty value in the lookup keeps nodata rather than becoming a zero.
         lut = np.full(n + 1, nodata, dtype=dtype)
         blank = 0
         for r in rows:
@@ -182,7 +187,7 @@ def main():
 
     print('== deriving the plot-index attribute rasters ==')
     images = []                                  # (source path, stem, band, pyramiding, properties)
-    for tier in ('base', 'ftm'):
+    for tier in TIERS:
         derived = dict(derive(tier))
         for var, _col, _dt, _nd, unit, vrange in DERIVED:
             dst = derived[var]
@@ -303,16 +308,19 @@ def ingest(coll, plan, creds):
 
 
 def ingest_tables(creds):
-    """One table per tier mapping the plot index to the NFI plot id, for the viewer to look up."""
+    """A table mapping the plot index to the NFI plot id, for the viewer to look up.
+
+    Earth Engine ingests a CSV as a table only with an x and a y column, so every row carries 0, 0.
+    Those are placeholders: no plot location enters the table."""
     import ee
     from google.cloud import storage
     ee.Initialize(credentials=creds, project=PROJECT)
     bucket = storage.Client(project=PROJECT, credentials=creds).bucket(BUCKET)
     print('')
     print('== plot-id tables ==')
-    for tier in ('base', 'ftm'):
+    for tier in TIERS:
         rows = read_lookup(tier)
-        name = 'plot_ids_%s' % tier
+        name = TABLE % tier
         path = os.path.join(STAGING, name + '.csv')
         with io.open(path, 'w', encoding='utf-8', newline='') as fh:
             w = csv.writer(fh)
@@ -357,7 +365,7 @@ def make_public():
     import ee
     ee.Initialize(credentials=credentials(), project=PROJECT)
     coll = 'projects/%s/assets/%s' % (PROJECT, COLLECTION)
-    for asset in [coll] + ['projects/%s/assets/plot_ids_%s' % (PROJECT, t) for t in ('base', 'ftm')]:
+    for asset in [coll] + ['projects/%s/assets/%s' % (PROJECT, TABLE % t) for t in TIERS]:
         try:
             acl = ee.data.getAssetAcl(asset)
         except Exception as e:
