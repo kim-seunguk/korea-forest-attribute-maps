@@ -18,7 +18,7 @@ SOURCES
     m8_maps_30m/ftm_<attribute>_30m.tif · m8_uncertainty_30m/ftm_*_{sd,uncertainty}_30m.tif
     index/imputation_ftm.tif · index/nearest_reference_distance_ftm.tif
     data_records.csv                08c_build_data_records.py      -> data_records.csv
-    plot_lookup_ftm.csv             05d_build_plot_lookup.R        -> plot_lookup_ftm.csv (+ species columns)
+    plot_lookup_ftm.csv             05d_build_plot_lookup.R        -> plot_lookup.csv (+ species columns)
     dominant_species_table_ftm.csv  07k_species_reliability.py     -> dominant_species_table.csv
 
 CURRENCY. Tables from an earlier run can lie beside the current rasters in outputs/nfi8/, and nothing
@@ -82,19 +82,20 @@ RENAME = {}
 SUBDIR = {}
 for _t in TIER:
     for _v in VARIABLE:
-        RENAME[f'{_t}_{_v}_30m.tif'] = f'{_t}_{_v}_30m.tif'
+        RENAME[f'{_t}_{_v}_30m.tif'] = f'{_v}_30m.tif'
         SUBDIR[f'{_t}_{_v}_30m.tif'] = 'm8_maps_30m'
     for _v in CONTINUOUS:
-        RENAME[f'{_t}_{_v}_sd_30m.tif'] = f'{_t}_{_v}_sd_30m.tif'
+        RENAME[f'{_t}_{_v}_sd_30m.tif'] = f'{_v}_sd_30m.tif'
         SUBDIR[f'{_t}_{_v}_sd_30m.tif'] = 'm8_uncertainty_30m'
-    RENAME[f'{_t}_dominant_species_uncertainty_30m.tif'] = f'{_t}_dominant_species_uncertainty_30m.tif'
+    RENAME[f'{_t}_dominant_species_uncertainty_30m.tif'] = 'dominant_species_uncertainty_30m.tif'
     SUBDIR[f'{_t}_dominant_species_uncertainty_30m.tif'] = 'm8_uncertainty_30m'
-    for _f in (f'imputation_{_t}.tif', f'nearest_reference_distance_{_t}.tif'):
-        RENAME[_f] = _f
+    for _f, _d in ((f'imputation_{_t}.tif', 'plot_index_30m.tif'),
+                   (f'nearest_reference_distance_{_t}.tif', 'nearest_reference_distance_30m.tif')):
+        RENAME[_f] = _d
         SUBDIR[_f] = 'index'
 
 # non-raster companions: (source under outputs/nfi8, deposit name)
-LOOKUP = ('plot_lookup_ftm.csv', 'plot_lookup_ftm.csv')
+LOOKUP = ('plot_lookup_ftm.csv', 'plot_lookup.csv')
 SPECIES = ('dominant_species_table_ftm.csv', 'dominant_species_table.csv')
 MANIFEST = ('data_records.csv', 'data_records.csv')
 LEGEND_USED = os.path.join('m8_maps_30m', 'm8_domsp_legend_used.csv')   # written first by 05a_direct_prediction.R
@@ -109,7 +110,7 @@ LOOKUP_COLUMNS = [('plot_index', 'plot_idx'), ('nfi_plot_id', 'Plot_ID'),
                   ('basal_area_m2ha', 'BAPH')]
 
 # Manifest notes that name a companion file by its working name.
-NOTE_FIX = [('dominant_species_table_ftm.csv', 'dominant_species_table.csv')]
+NOTE_FIX = [('plot_lookup_ftm.csv', 'plot_lookup.csv'), ('dominant_species_table_ftm.csv', 'dominant_species_table.csv')]
 
 
 def read_csv(path):
@@ -217,13 +218,13 @@ def species_maps():
     The lookup carries the plot's FIELD-measured dominant species (well over a hundred distinct names),
     not the raster classes, so it cannot be joined to the species table as shipped. The trained legend
     is the authoritative code<->name map; any species outside its named classes is what the raster calls
-    class 38 (기타 / Other). The field name is KEPT, since collapsing it would discard exactly the detail
+    class 36 (기타 / Other). The field name is KEPT, since collapsing it would discard exactly the detail
     that makes the plot-index family worth having, and the code is added alongside it.
     """
     legend = read_csv(os.path.join(OUT, LEGEND_USED))
     code_of = {r['species']: r['code'] for r in legend}
     sci_of = {r['species']: r['sci_name'] for r in legend}
-    other = next((r['code'] for r in legend if r['species'] == '기타'), '38')
+    other = next((r['code'] for r in legend if r['species'] == '기타'), '36')
 
     nfi = read_csv(os.path.join(ROOT, 'data', 'species_nfi_lookup.csv'))
     for r in nfi:
@@ -266,6 +267,29 @@ def stage_lookup(code_of, sci_of, other, dry):
           + (f", {len(unresolved)} names without a scientific name" if unresolved else ""))
     return unresolved, len(rows)
 
+# forest-type codes of the lookup's `forest_type` column: the map's class system, read from the recode table the
+# pipeline uses, with the names the forest-type map specification gives
+FT_LABEL = {'10': 'other conifers or conifer mixture', '11': 'Pinus thunbergii', '12': 'Larix kaempferi', '13': 'Pinus rigida',
+            '14': 'Pinus densiflora', '15': 'Pinus koraiensis', '16': 'Chamaecyparis obtusa', '20': 'other oaks or oak mixture',
+            '21': 'Quercus variabilis', '22': 'Quercus acutissima', '23': 'Quercus mongolica', '30': 'Castanea crenata',
+            '40': 'evergreen broadleaves', '50': 'other broadleaves or broadleaf mixture', '60': 'mixed conifer-broadleaf'}
+
+
+def stage_forest_type_codes(dry):
+    """forest_type_codes.csv: code, English name, Korean name, from data/forest_type_recode.csv."""
+    kr = {}
+    for r in read_csv(os.path.join(ROOT, 'data', 'forest_type_recode.csv')):
+        kr.setdefault(r['recl'], r['kor_name'])
+    kr.setdefault('60', '혼효림')
+    codes = sorted(set(kr) | set(FT_LABEL), key=int)
+    missing = [c for c in codes if c not in FT_LABEL]
+    if missing:
+        raise SystemExit(f"  forest_type_codes: no English name for {missing}")
+    rows = [{'code': c, 'name': FT_LABEL[c], 'name_kr': kr.get(c, '')} for c in codes]
+    if not dry:
+        write_csv(os.path.join(DEPOSIT, 'forest_type_codes.csv'), rows, ['code', 'name', 'name_kr'])
+    print(f"  {'forest_type_recode.csv':30s} -> {'forest_type_codes.csv':28s} {len(rows)} codes")
+
 
 def stage_species_table(dry):
     src_name, dst_name = SPECIES
@@ -289,7 +313,7 @@ def overview_resampling(name):
         return Resampling.average, 'average'
     if 'dominant_species' in low:
         return Resampling.mode, 'mode'
-    if low.startswith('imputation'):
+    if low.startswith(('imputation', 'plot_index')):
         return Resampling.nearest, 'nearest'
     return Resampling.average, 'average'
 
@@ -410,8 +434,9 @@ def stage_manifest(dry):
         if r['epsg'] != '5179':
             raise SystemExit(f"  manifest row {r['file']} has epsg={r['epsg']}, expected 5179")
         r['file'] = RENAME[r['file']]
-        for old, new in NOTE_FIX:
+        for old, new in list(NOTE_FIX) + list(RENAME.items()):
             r['notes'] = r['notes'].replace(old, new)
+        r.pop('predictor_set', None)                 # one set is delivered, so the column said nothing
     if not dry:
         write_csv(os.path.join(DEPOSIT, MANIFEST[1]), rows, list(rows[0].keys()))
     print(f"  {MANIFEST[0]:30s} -> {MANIFEST[1]:28s} {len(rows)} rows")
@@ -458,39 +483,18 @@ def write_readme(manifest, n_plots, n_classes, fmt, n_files, dry):
 Kim, S., Shin, J. H., Han, H., and Choe, H. (2026).
 Department of Agriculture, Forestry and Bioresources, Seoul National University.
 
-Version 2 · DOI <https://doi.org/{doi}> · Licence **CC BY 4.0** · Code (MIT) <{GITHUB}>
+DOI <https://doi.org/{doi}> · Licence **CC BY 4.0** · Code (MIT) <{GITHUB}>
 
 Read `data_records.csv` alongside this file: it is the machine-readable schema for every raster (data
 type, nodata, unit, valid range, grid, CRS).
 
-## What changed from version 1
-
-Version 1 (<https://doi.org/{DOI_V1}>) stays available. Version 2 replaces every file.
-
-- **One predictor set.** Version 1 delivered every product twice, without and with the national
-  forest-type map (`base`, `ftm`). Version 2 delivers the `ftm` set only.
-- **{n_classes} dominant-species classes.** Two species fell below 20 reference plots and joined class 38
-  (Other). Their codes, 7 and 17, are unused; every other code keeps its version 1 meaning.
-- **Corrected plot positions.** For 191 reference plots first surveyed in 2025, the source coordinates
-  disagreed with the plot number by 0.2–1.1 km. Version 2 takes their coordinates from the same
-  survey's stand records, which agree with it.
-- **Rebuilt inputs.** The Sentinel-2 composites are averaged into each 30 m cell of the product grid
-  (version 1 resampled them twice), elevation is resampled once from the native SRTM grid, and the
-  climate grids are aligned on cell centres with a coastal fill.
-- **Validation by inventory cluster.** Cross-validation blocks, folds and bootstrap intervals treat the
-  subplots of one inventory cluster as a single unit.
-- ⚠ **Plot indices are not comparable between versions.** The reference library changed, so an index
-  value names a different plot in each version. Decode each version's raster with its own lookup.
-- **A recommended minimum support per layer.** `data_records.csv` gained the column
-  `recommended_min_support_km`: 0.03 (the cell) for coniferous fraction, dominant species and the plot
-  index; 1 (one kilometre) for aboveground biomass and tree-species diversity, whose cell-level accuracy
-  is low (see "Accuracy, in brief").
+This record replaces <https://doi.org/{DOI_V1}>. Plot indices are not comparable between the two records, so
+decode each raster with the lookup of its own record.
 
 ## Looking at the maps without downloading them
 
 The maps are published as a public Earth Engine image collection, with a browser viewer over it, so
-they can be examined before or instead of downloading several gigabytes. The viewer shows version 2 of
-the maps; the version 1 collection stays online under its own name.
+they can be examined before or instead of downloading several gigabytes. The viewer shows these maps.
 
 | | |
 |---|---|
@@ -518,37 +522,39 @@ attributes to be mutually consistent rather than individually optimal.
 
 ## Files
 
-**Direct prediction**: `ftm_<attribute>_30m.tif` for `conifer_fraction`, `dominant_species`, `biomass`
+**Direct prediction**: `<attribute>_30m.tif` for `conifer_fraction`, `dominant_species`, `biomass`
 and `shannon`, each paired with a per-cell relative uncertainty layer:
 
-- `ftm_<attribute>_sd_30m.tif`: ensemble standard deviation, for the three continuous attributes. Higher = more uncertain.
-- `ftm_dominant_species_uncertainty_30m.tif`: `1 − vote margin`. Higher = more uncertain.
+- `<attribute>_sd_30m.tif`: between-tree standard deviation, for the three continuous attributes. Higher = more uncertain.
+- `dominant_species_uncertainty_30m.tif`: `1 − vote margin`. Higher = more uncertain.
 
 **Plot-index imputation**
 
-- `imputation_ftm.tif`: index of the matched inventory plot.
-- `plot_lookup_ftm.csv`: join `plot_index` to get that plot's attributes.
-- `nearest_reference_distance_ftm.tif`: random-forest **distance** from the cell to its matched plot,
+- `plot_index_30m.tif`: index of the matched inventory plot.
+- `plot_lookup.csv`: join `plot_index` to get that plot's attributes.
+- `nearest_reference_distance_30m.tif`: random-forest **distance** from the cell to its matched plot,
   defined as `1 − the proportion of trees placing the two in the same terminal node`. Higher means a
   **less** similar match. It is a continuous diagnostic, not a thresholded mask.
 
 **Tables**
 
-- `dominant_species_table.csv`: the {n_classes} class codes with Korean and scientific names, prevalence,
-  and per-class producer's and user's accuracy and F1. Accuracy cells are empty for classes the
+- `dominant_species_table.csv`: the {n_classes} class codes with the codes of the earlier record (`code_v1`), Korean and
+  scientific names, prevalence, and per-class producer's and user's accuracy and F1. Accuracy cells are empty for classes the
   classifier never assigned: user's accuracy is undefined there, not zero.
 - `data_records.csv`: per-file schema for the {len(manifest)} rasters (data type, nodata, unit, valid
-  range, grid, recommended minimum support). The three tables are described in this README only.
+  range, grid).
+- `forest_type_codes.csv`: the forest-type codes of the lookup's `forest_type` column with their names.
+  The tables are described in this README only.
 
 ## Decoding the dominant-species map
 
-Raster values are class codes 0–38, with 7 and 17 unused. Join to `dominant_species_table.csv` on
-`code`. Class 38 (기타 / Other) holds species too rare to model individually. Nodata is 255.
+Raster values are class codes 0–36. Join to `dominant_species_table.csv` on `code`. Class 36 (기타 / Other)
+holds species too rare to model individually. Nodata is 255.
 
 ## Decoding the plot-index map
 
-Raster values are plot indices 1…{n_plots:,} stored as float32. Join to `plot_lookup_ftm.csv` on
-`plot_index`.
+Raster values are plot indices 1…{n_plots:,} stored as 16-bit unsigned integers, with 0 as nodata. Join to
+`plot_lookup.csv` on `plot_index`.
 
 ⚠ **Never resample this raster with an interpolating method.** Bilinear or cubic averages two plot
 indices into a third plot that was never matched. Use nearest neighbour or a majority rule.
@@ -557,12 +563,12 @@ indices into a third plot that was never matched. Use nearest neighbour or a maj
 |---|---|
 | `plot_index` | the raster value |
 | `nfi_plot_id` | official inventory plot number |
-| `dominant_species_code` | the class the dominant-species map would give this plot (38 = Other) |
+| `dominant_species_code` | the class the dominant-species map would give this plot (36 = Other) |
 | `dominant_species_kr`, `dominant_species_sci` | the plot's field-recorded dominant species, finer than the mapped classes |
 | `coniferous_fraction` | conifer share of basal area per hectare, 0–1 |
 | `aboveground_biomass_Mgha` | aboveground biomass, Mg ha⁻¹ |
 | `shannon_diversity` | Shannon *H*′ of the species' shares of basal area per hectare |
-| `forest_type` | forest type: 10 other conifers or conifer mixture · 11 *Pinus thunbergii* · 12 *Larix kaempferi* · 13 *Pinus rigida* · 14 *Pinus densiflora* · 15 *Pinus koraiensis* · 16 *Chamaecyparis obtusa* · 20 other oaks or oak mixture · 21 *Quercus variabilis* · 22 *Quercus acutissima* · 23 *Quercus mongolica* · 30 *Castanea crenata* · 40 evergreen broadleaves · 50 other broadleaves or broadleaf mixture · 60 mixed conifer–broadleaf |
+| `forest_type` | forest type (`forest_type_codes.csv`): 10 other conifers or conifer mixture · 11 *Pinus thunbergii* · 12 *Larix kaempferi* · 13 *Pinus rigida* · 14 *Pinus densiflora* · 15 *Pinus koraiensis* · 16 *Chamaecyparis obtusa* · 20 other oaks or oak mixture · 21 *Quercus variabilis* · 22 *Quercus acutissima* · 23 *Quercus mongolica* · 30 *Castanea crenata* · 40 evergreen broadleaves · 50 other broadleaves or broadleaf mixture · 60 mixed conifer–broadleaf |
 | `diameter_class` | representative breast-height diameter in cm: 3 (below 6 cm), 12 (6–18 cm), 24 (18–30 cm), 36 (30 cm and above) |
 | `crown_density` | representative canopy cover in %: 25 (50 % or less), 60 (51–75 %), 85 (76 % or more) |
 | `dominant_species_ba_share` | the dominant species' share of basal area per hectare, 0–1 |
@@ -592,10 +598,10 @@ whole) and a spatially disjoint test set:
 | aboveground biomass | *R*² ⟨cv biomass⟩ | ⟨test biomass⟩ |
 | tree-species diversity | *R*² ⟨cv shannon⟩ | ⟨test shannon⟩ |
 
-**The four attributes are not equally reliable at a single cell.** Coniferous fraction and dominant
-species can be read cell by cell at the accuracy above. Aboveground biomass and tree-species diversity
-should be aggregated to at least 1 km and read as gradients; accuracy rises with aggregation (*R*²,
-cross-validation):
+**Accuracy rises with aggregation.** Coniferous fraction and dominant species can be read cell by cell at
+the accuracy above. Aboveground biomass and tree-species diversity carry the broad gradients at the cell,
+and their accuracy rises as cells are combined (*R*², cross-validation), so the level of aggregation can be
+matched to the application:
 
 | aggregation | coniferous fraction | biomass | Shannon |
 |---|---|---|---|
@@ -632,7 +638,7 @@ evaluated against observed error.
 ## Citation
 
 Kim, S., Shin, J. H., Han, H., and Choe, H.: Nationwide 30 m maps of forest composition, biomass, and
-diversity in South Korea (2021–2025) from direct prediction and plot-index imputation, version 2
+diversity in South Korea (2021–2025) from direct prediction and plot-index imputation
 [Data set], Zenodo, https://doi.org/{doi}, 2026.
 
 ---
@@ -699,7 +705,8 @@ def main(argv):
     if unresolved:
         print(f"  ! {len(unresolved)} species names have no scientific name: {sorted(unresolved)[:8]}")
     n_classes = stage_species_table(dry)
-    n_files = len(RENAME) + 3 + 1                 # rasters + lookup, species table, data_records + README
+    stage_forest_type_codes(dry)
+    n_files = len(RENAME) + 4 + 1                 # rasters + lookup, species table, forest-type codes, data_records + README
     fmt = raster_format(staged if not dry else [src_path(n) for n in RENAME])
     write_readme(manifest, n_plots, n_classes, fmt, n_files, dry)
 
@@ -725,7 +732,7 @@ def main(argv):
             print(f"  ! {os.path.basename(p)}: {q}")
             bad += 1
     for p in staged:
-        if os.path.basename(p).startswith('imputation_'):
+        if os.path.basename(p).startswith(('imputation_', 'plot_index')):
             for q in check_index(p, n_plots):
                 print(f"  ! {q}")
                 bad += 1

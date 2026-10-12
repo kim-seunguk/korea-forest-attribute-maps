@@ -7,7 +7,7 @@ that the maps can be looked at without downloading them.
 |---|---|
 | viewer | <https://ee-korea-forest-maps.projects.earthengine.app/view/korea-forest-maps> |
 | collection | `projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2` |
-| plot ids | `projects/ee-korea-forest-maps/assets/plot_ids_ftm_v2` |
+| plot ids | `projects/ee-korea-forest-maps/assets/plot_ids_v2` |
 
 These are the version 2 assets. The version 1 collection, `korea-forest-attributes`, and its plot-id
 tables `plot_ids_base` and `plot_ids_ftm` stay online unchanged; nothing in this directory reads them.
@@ -54,7 +54,7 @@ shared scale that shows as reaching further into both ends rather than being nor
 ## Species colours
 
 From `data/species_colors.csv`, the same table the figures are drawn from: a colour for each species
-named in the map figures' legends, and one shared colour for the rest. The palette keeps a row for
-each of the 39 class codes; two of them, 7 and 17, are unused in version 2, which trains 37 classes.
+named in the map figures' legends, and one shared colour for the rest. The palette has a row for
+each of the 37 class codes, 0 to 36.
 Clicking a cell reports the class name from `dominant_species_table.csv`, which also carries the
 per-class accuracy — the map is far more reliable for the common species than for the rare ones.

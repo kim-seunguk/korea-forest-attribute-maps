@@ -100,15 +100,15 @@ var VIS = {
   }
 };
 var SPECIES = ["E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "C9A227", "FF73DF", "78C679", "E1E1E1", "E1E1E1", "E1E1E1", "FA9FB5", "267300", "E1E1E1", "E1E1E1", "6A51A3", "E1E1E1", "E1E1E1", "E1E1E1", "08519C", "E1E1E1", "41B6C4", "9ECAE1", "E1E1E1", "E1E1E1", "1B9E77", "FEC44F", "E1E1E1", "E1E1E1", "A63603", "FDAE6B", "F16913", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1"];
-var SPECIES_MAJOR = [{"code": 4, "hex": "C9A227", "label": "Carpinus laxiflora"}, {"code": 5, "hex": "FF73DF", "label": "Carpinus tschonoskii"}, {"code": 6, "hex": "78C679", "label": "Castanea crenata"}, {"code": 10, "hex": "FA9FB5", "label": "Cornus controversa"}, {"code": 11, "hex": "267300", "label": "Cryptomeria japonica"}, {"code": 14, "hex": "6A51A3", "label": "Larix kaempferi"}, {"code": 18, "hex": "08519C", "label": "Pinus densiflora"}, {"code": 20, "hex": "41B6C4", "label": "Pinus rigida"}, {"code": 21, "hex": "9ECAE1", "label": "Pinus thunbergii"}, {"code": 24, "hex": "1B9E77", "label": "Prunus serrulata var. pubescens"}, {"code": 25, "hex": "FEC44F", "label": "Quercus acutissima"}, {"code": 28, "hex": "A63603", "label": "Quercus mongolica"}, {"code": 29, "hex": "FDAE6B", "label": "Quercus serrata"}, {"code": 30, "hex": "F16913", "label": "Quercus variabilis"}];
-var SPECIES_NAME = ["Acer pictum var. mono", "Alnus firma", "Betula pendula", "Betula schmidtii", "Carpinus laxiflora", "Carpinus tschonoskii", "Castanea crenata", "Castanopsis sieboldii", "Celtis sinensis", "Chamaecyparis obtusa", "Cornus controversa", "Cryptomeria japonica", "Fraxinus chinensis var. rhynchophylla", "Juglans mandshurica", "Larix kaempferi", "Liriodendron tulipifera", "Morus indica", "Paulownia tomentosa", "Pinus densiflora", "Pinus koraiensis", "Pinus rigida", "Pinus thunbergii", "Platycarya strobilacea", "Populus × tomentiglandulosa", "Prunus serrulata var. pubescens", "Quercus acutissima", "Quercus aliena", "Quercus dentata", "Quercus mongolica", "Quercus serrata", "Quercus variabilis", "Robinia pseudoacacia", "Salix pierotii", "Styrax japonicus", "Tilia amurensis", "Tilia mandshurica", "Ulmus davidiana", "Zelkova serrata", "Other"];
+var SPECIES_MAJOR = [{"code": 4, "hex": "C9A227", "label": "Carpinus laxiflora"}, {"code": 5, "hex": "FF73DF", "label": "Carpinus tschonoskii"}, {"code": 6, "hex": "78C679", "label": "Castanea crenata"}, {"code": 9, "hex": "FA9FB5", "label": "Cornus controversa"}, {"code": 10, "hex": "267300", "label": "Cryptomeria japonica"}, {"code": 13, "hex": "6A51A3", "label": "Larix kaempferi"}, {"code": 16, "hex": "08519C", "label": "Pinus densiflora"}, {"code": 18, "hex": "41B6C4", "label": "Pinus rigida"}, {"code": 19, "hex": "9ECAE1", "label": "Pinus thunbergii"}, {"code": 22, "hex": "1B9E77", "label": "Prunus serrulata var. pubescens"}, {"code": 23, "hex": "FEC44F", "label": "Quercus acutissima"}, {"code": 26, "hex": "A63603", "label": "Quercus mongolica"}, {"code": 27, "hex": "FDAE6B", "label": "Quercus serrata"}, {"code": 28, "hex": "F16913", "label": "Quercus variabilis"}];
+var SPECIES_NAME = ["Acer pictum var. mono", "Alnus firma", "Betula pendula", "Betula schmidtii", "Carpinus laxiflora", "Carpinus tschonoskii", "Castanea crenata", "Celtis sinensis", "Chamaecyparis obtusa", "Cornus controversa", "Cryptomeria japonica", "Fraxinus chinensis var. rhynchophylla", "Juglans mandshurica", "Larix kaempferi", "Liriodendron tulipifera", "Morus indica", "Pinus densiflora", "Pinus koraiensis", "Pinus rigida", "Pinus thunbergii", "Platycarya strobilacea", "Populus × tomentiglandulosa", "Prunus serrulata var. pubescens", "Quercus acutissima", "Quercus aliena", "Quercus dentata", "Quercus mongolica", "Quercus serrata", "Quercus variabilis", "Robinia pseudoacacia", "Salix pierotii", "Styrax japonicus", "Tilia amurensis", "Tilia mandshurica", "Ulmus davidiana", "Zelkova serrata", "Other"];
 // <<< generated
 
 // Korean common names in published class-code order, from data/species_codes.csv.
 var SPECIES_NAME_KO = [
   '고로쇠나무', '사방오리', '자작나무', '박달나무', '서어나무', '개서어나무', '밤나무',
-  '구실잣밤나무', '팽나무', '편백', '층층나무', '삼나무', '물푸레나무', '가래나무',
-  '일본잎갈나무', '백합나무', '산뽕나무', '오동나무', '소나무', '잣나무', '리기다소나무',
+  '팽나무', '편백', '층층나무', '삼나무', '물푸레나무', '가래나무',
+  '일본잎갈나무', '백합나무', '산뽕나무', '소나무', '잣나무', '리기다소나무',
   '곰솔', '굴피나무', '은사시나무', '잔털벚나무', '상수리나무', '갈참나무', '떡갈나무',
   '신갈나무', '졸참나무', '굴참나무', '아까시나무', '버드나무', '때죽나무', '피나무',
   '찰피나무', '느릅나무', '느티나무', '기타'
@@ -343,10 +343,10 @@ function internalOption(display, values, ids) {
 // Version 2 of the dataset: its own collection and plot-id table. The version 1 assets stay online
 // under their own names and are not read here.
 var COLLECTION = 'projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2';
-var PLOT_IDS = ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_ftm_v2');
+var PLOT_IDS = ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_v2');
 
-// TODO: replace with the version 2 DOI before deploying. DOI_CONCEPT resolves to the newest version.
-var DOI = 'https://doi.org/10.5281/zenodo.21701424';
+// DOI_CONCEPT resolves to the newest version.
+var DOI = 'https://doi.org/10.5281/zenodo.23313068';
 var DOI_CONCEPT = '10.5281/zenodo.21701423';
 var CODE = 'https://github.com/kim-seunguk/korea-forest-attribute-maps';
 
@@ -423,20 +423,19 @@ function visCaption(band) {
          translatedMetadata(v.range_from || '', VIS_RANGE_TEXT);
 }
 
-// The deposited file names carry the token of the predictor set they were made with.
-var PREDICTOR_SET = 'ftm';
+// Version 2 file names carry no predictor-set token: one set is delivered.
 
 /** Asset id for a (family, band). */
 function assetId(family, band) {
   var stem;
   if (band === 'plot_index') {
-    stem = 'imputation_' + PREDICTOR_SET;
+    stem = 'plot_index_30m';
   } else if (band === 'nearest_reference_distance') {
-    stem = 'nearest_reference_distance_' + PREDICTOR_SET;
+    stem = 'nearest_reference_distance_30m';
   } else if (family === 'imputation') {
-    stem = 'imputed_' + PREDICTOR_SET + '_' + band + '_30m';
+    stem = 'imputed_' + band + '_30m';
   } else {
-    stem = PREDICTOR_SET + '_' + band + '_30m';
+    stem = band + '_30m';
   }
   return COLLECTION + '/' + stem;
 }
@@ -899,10 +898,10 @@ function speciesReadoutPart(value) {
   if (value === null || value === undefined) { return {text: '—', italic: false}; }
   var number = Number(value);
   var code = Math.round(number);
-  if (!isFinite(number) || Math.abs(number - code) > 1e-6 || code < 0 || code > 38) {
+  if (!isFinite(number) || Math.abs(number - code) > 1e-6 || code < 0 || code > 36) {
     return {text: tr('readout.unknown_species'), italic: false};
   }
-  if (code === 38) { return {text: tr('readout.other_species'), italic: false}; }
+  if (code === 36) { return {text: tr('readout.other_species'), italic: false}; }
   return currentLanguage === 'ko' ?
     {text: SPECIES_NAME_KO[code], italic: false} :
     {text: SPECIES_NAME[code], italic: true};

@@ -89,7 +89,7 @@ cat(sprintf("loaded %d plot-predictions | targets=%s | predsets=%s\n",
             nrow(DT), paste(TARGETS, collapse = ","), paste(PSETS, collapse = ",")))
 
 # ---- 1b. sample layout: why the cluster range exists ---------------------------------------------
-# The choice of aggregation supports is set by the sampling design, not by preference. Measuring the
+# The choice of aggregation levels is set by the sampling design, not by preference. Measuring the
 # nearest-neighbour distance leaves the cluster structure in the output: if these numbers change, the
 # cluster range in SUPPORTS has to be reconsidered.
 tm$stage("spacing")
@@ -231,7 +231,7 @@ for (ps in PSETS) {
 }
 par(op); dev.off()
 
-cat(sprintf("\n===== HEADLINE: R² by aggregation support (min_plots = %d) =====\n", MIN_PLOTS_SET[1]))
+cat(sprintf("\n===== HEADLINE: R² by aggregation level (min_plots = %d) =====\n", MIN_PLOTS_SET[1]))
 print(dcast(out[min_plots == MIN_PLOTS_SET[1]], target + predset ~ support_km, value.var = "r2"),
       row.names = FALSE)
 cat("\nRMSE in original units (cannot be inflated by aggregation the way R² can):\n")

@@ -1,40 +1,38 @@
 code,sci_name,major,hex,label
-18,Pinus densiflora,True,#08519C,Pinus densiflora
-28,Quercus mongolica,True,#A63603,Quercus mongolica
-30,Quercus variabilis,True,#F16913,Quercus variabilis
+16,Pinus densiflora,True,#08519C,Pinus densiflora
+26,Quercus mongolica,True,#A63603,Quercus mongolica
+28,Quercus variabilis,True,#F16913,Quercus variabilis
 6,Castanea crenata,True,#78C679,Castanea crenata
-14,Larix kaempferi,True,#6A51A3,Larix kaempferi
-21,Pinus thunbergii,True,#9ECAE1,Pinus thunbergii
-20,Pinus rigida,True,#41B6C4,Pinus rigida
-25,Quercus acutissima,True,#FEC44F,Quercus acutissima
-29,Quercus serrata,True,#FDAE6B,Quercus serrata
+13,Larix kaempferi,True,#6A51A3,Larix kaempferi
+19,Pinus thunbergii,True,#9ECAE1,Pinus thunbergii
+18,Pinus rigida,True,#41B6C4,Pinus rigida
+23,Quercus acutissima,True,#FEC44F,Quercus acutissima
+27,Quercus serrata,True,#FDAE6B,Quercus serrata
 5,Carpinus tschonoskii,True,#FF73DF,Carpinus tschonoskii
-11,Cryptomeria japonica,True,#267300,Cryptomeria japonica
+10,Cryptomeria japonica,True,#267300,Cryptomeria japonica
 4,Carpinus laxiflora,True,#C9A227,Carpinus laxiflora
-10,Cornus controversa,True,#FA9FB5,Cornus controversa
-24,Prunus serrulata var. pubescens,True,#1B9E77,Prunus serrulata var. pubescens
+9,Cornus controversa,True,#FA9FB5,Cornus controversa
+22,Prunus serrulata var. pubescens,True,#1B9E77,Prunus serrulata var. pubescens
 0,Acer pictum var. mono,False,#E1E1E1,Others
 1,Alnus firma,False,#E1E1E1,Others
 2,Betula pendula,False,#E1E1E1,Others
 3,Betula schmidtii,False,#E1E1E1,Others
-7,Castanopsis sieboldii,False,#E1E1E1,Others
-8,Celtis sinensis,False,#E1E1E1,Others
-9,Chamaecyparis obtusa,False,#E1E1E1,Others
-12,Fraxinus chinensis var. rhynchophylla,False,#E1E1E1,Others
-13,Juglans mandshurica,False,#E1E1E1,Others
-15,Liriodendron tulipifera,False,#E1E1E1,Others
-16,Morus indica,False,#E1E1E1,Others
-17,Paulownia tomentosa,False,#E1E1E1,Others
-19,Pinus koraiensis,False,#E1E1E1,Others
-22,Platycarya strobilacea,False,#E1E1E1,Others
-23,Populus × tomentiglandulosa,False,#E1E1E1,Others
-26,Quercus aliena,False,#E1E1E1,Others
-27,Quercus dentata,False,#E1E1E1,Others
-31,Robinia pseudoacacia,False,#E1E1E1,Others
-32,Salix pierotii,False,#E1E1E1,Others
-33,Styrax japonicus,False,#E1E1E1,Others
-34,Tilia amurensis,False,#E1E1E1,Others
-35,Tilia mandshurica,False,#E1E1E1,Others
-36,Ulmus davidiana,False,#E1E1E1,Others
-37,Zelkova serrata,False,#E1E1E1,Others
-38,Other,False,#E1E1E1,Others
+7,Celtis sinensis,False,#E1E1E1,Others
+8,Chamaecyparis obtusa,False,#E1E1E1,Others
+11,Fraxinus chinensis var. rhynchophylla,False,#E1E1E1,Others
+12,Juglans mandshurica,False,#E1E1E1,Others
+14,Liriodendron tulipifera,False,#E1E1E1,Others
+15,Morus indica,False,#E1E1E1,Others
+17,Pinus koraiensis,False,#E1E1E1,Others
+20,Platycarya strobilacea,False,#E1E1E1,Others
+21,Populus × tomentiglandulosa,False,#E1E1E1,Others
+24,Quercus aliena,False,#E1E1E1,Others
+25,Quercus dentata,False,#E1E1E1,Others
+29,Robinia pseudoacacia,False,#E1E1E1,Others
+30,Salix pierotii,False,#E1E1E1,Others
+31,Styrax japonicus,False,#E1E1E1,Others
+32,Tilia amurensis,False,#E1E1E1,Others
+33,Tilia mandshurica,False,#E1E1E1,Others
+34,Ulmus davidiana,False,#E1E1E1,Others
+35,Zelkova serrata,False,#E1E1E1,Others
+36,Other,False,#E1E1E1,Others

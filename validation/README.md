@@ -26,12 +26,13 @@ dominant-species classes, and blocks, folds and bootstrap intervals assigned by 
 | `m7_coverage_ftm.csv` | coverage of the 50, 80 and 95 % intervals built from the ensemble SD, overall and by biomass third | `07h_uncertainty_coverage.py` |
 | `m8_temporal_sensitivity_ftm.csv` | direct-map accuracy by the plot's survey year | `07i_temporal_sensitivity.py` |
 | `m9_consistency_ftm.csv` | variance ratios, attribute-space plausibility distances and Bhattacharyya overlap of both families against the plot population | `07j_attribute_consistency.py` |
-| `dominant_species_table_ftm.csv` | the 37 trained classes: code, names, reference-plot count and prevalence, and producer's and user's accuracy and F1 under spatial-block cross-validation. The table deposited beside the maps | `07k_species_reliability.py` |
+| `dominant_species_table_ftm.csv` | the 37 trained classes: code, version 1 code, names, reference-plot count and prevalence, and producer's and user's accuracy and F1 under spatial-block cross-validation. The table deposited beside the maps | `07k_species_reliability.py` |
 | `m8_map_summary_plotuse_ftm.csv` | how the plot-index map uses the reference library: mapped cells, plots assigned, cells and hectares per plot | `07l_map_summaries.py` |
 | `m11_support_scale_ftm.csv` | accuracy against aggregation support, from the cell to 100 km, with a permutation control and a minimum number of plots per unit | `07o_support_scale.R` |
 | `m22_cluster_support_ftm.csv` | both families at the support of the plot and at the support of the inventory cluster | `07p_cluster_support.R` |
 | `m26_density_weighted.csv` | accuracy with each plot weighted by the area its cluster represents, beside the unweighted figure | `07q_density_weighting.py` |
 | `block_size_test.csv` | a climate-only biomass model under spatial blocks of 15 to 100 km, beside random folds | `07r_block_size_test.R` |
+| `variogram_range.csv` | semivariogram ranges of plot biomass, basal area and the dominant species' share of basal area, with the block size used | `04a_spatial_folds.R` |
 | `env_repr_quantiles.csv`, `env_repr_pc1_ratio.csv` | how the plots cover the climate and terrain of the mapped forest: sample and area quantiles with a Kolmogorov–Smirnov distance per variable, and the sample-to-area ratio by decile of the first principal component | `07s_environmental_representativeness.R` |
 
 ## Reading them
@@ -133,12 +134,12 @@ is built from carries plot identifiers and is not distributed.
 | largest change from the richer Sentinel-2 features | 0.004 (cross-validation), 0.009 (test) | `m4a_ladder_rich.csv` | `clim_s2rich` minus `clim_s2med`, same target and scheme |
 | plot-index maps, cross-validation | 0.48, 0.42 (0.42 unpooled), −0.29, −0.27 | `m4c_dualtrack.csv` | `predset` `full`, `stratum` `full`, `scheme` `spatial`; `domsp_raw` for the unpooled species |
 | plot-index maps, disjoint test | 0.47, 0.48 (0.47 unpooled), −0.28, −0.19 | `m4c_dualtrack.csv` | as above, `scheme` `test` |
-| the matching variables, plot index against the map read directly, cross-validation | forest type 0.457 against 0.453; diameter class 0.467 against 0.469; crown density 0.823 against 0.815, at the 50 % cut 0.907 against 0.914 | `m4c_dualtrack.csv` | `fld_V_VG`, `fld_V_DC`, `fld_V_DN`, `fld_V_DN2` and their `_ftmbaseline` rows, `stratum` `full`, `scheme` `spatial` |
+| the matching variables, plot index against the majority class, cross-validation and test | forest type 0.46 and 0.50 against 0.31 and 0.25; diameter class 0.47 and 0.48 against 0.47 and 0.47; crown density 0.82 and 0.79 against 0.84 and 0.81, at the 50 % cut 0.91 against 0.92 | `m4c_dualtrack.csv` | `fld_V_VG`, `fld_V_DC`, `fld_V_DN`, `fld_V_DN2`, `predset` `full`, `stratum` `full`, columns `point` and `nir` |
 | direct maps by stand origin, cross-validation | coniferous fraction 0.74 natural, 0.61 planted; biomass 0.28, 0.37; Shannon 0.34, 0.22 | `m6_stratified_ftm.csv` | `model` `pooled`, `eval_stratum`, `scheme` `spatial` |
 | plot-index coniferous fraction by stand origin, cross-validation | 0.52 natural, 0.28 planted | `m4c_dualtrack.csv` | `predset` `full`, `stratum` `natural` / `planted` |
-| accuracy against aggregation support, cross-validation | 1 km: 0.78, 0.36, 0.39; 10 km: 0.85, 0.47, 0.55 | `m11_support_scale_ftm.csv` | `support_km` 1 and 10, `min_plots` 1, column `r2` |
+| accuracy after aggregation to coarser resolution, cross-validation | 1 km: 0.78, 0.36, 0.39; 10 km: 0.85, 0.47, 0.55 | `m11_support_scale_ftm.csv` | `support_km` 1 and 10, `min_plots` 1, column `r2` |
 | permutation control up to 10 km | −0.64 to −0.10 | `m11_support_scale_ftm.csv` | `min_plots` 1, column `ctl_mean` |
-| reference noise: cell to 100 m units holding at least two plots | 0.72 to 0.80, 0.31 to 0.37, 0.32 to 0.41 | `m11_support_scale_ftm.csv` | `support_km` 0 and 0.1, `min_plots` 2 |
+| reference noise: all 100 m units against those holding at least two plots | 0.74 to 0.80, 0.32 to 0.37, 0.34 to 0.41 | `m11_support_scale_ftm.csv` | `support_km` 0.1, `min_plots` 1 and 2 |
 | interval coverage at 50, 80 and 95 % | coniferous fraction 0.53, 0.87, 0.96; biomass 0.52, 0.83, 0.96; Shannon 0.50, 0.81, 0.96 | `m7_coverage_ftm.csv` | `stratum` `all` |
 | error against the uncertainty layer | monotone over the deciles for coniferous fraction and biomass, not for Shannon; species accuracy 0.24 to 0.93 | `m7_calibration_ftm.csv` | `mean_abs_err` by `bin`; `accuracy` for `domsp_full` |
 | accuracy by survey year | biomass 0.25 to 0.35 | `m8_temporal_sensitivity_ftm.csv` | `Bio_a_ha` |
@@ -149,6 +150,5 @@ is built from carries plot identifiers and is not distributed.
 | cluster support, direct maps | coniferous fraction 0.72 to 0.76, biomass 0.31 to 0.35, Shannon 0.32 to 0.41 | `m22_cluster_support_ftm.csv` | `route` `direct`, `support` `1_plot` against `3_cluster` |
 | density weighting | at most 0.016 | `m26_density_weighted.csv` | `weighted` minus `unweighted` |
 | random minus spatial-block folds | 0.011 to 0.023 | `m4a_ladder_ftmonly.csv` | `point`, `random` minus `spatial` |
-| climate-only probe, biomass | 0.07 random, 0.02 spatial | `m4a_ladder_baseonly.csv` | `Bio_a_ha`, `predset` `clim` |
-| block-size test, climate-only biomass | gap 0.02 to 0.08 over 15 to 100 km blocks | `block_size_test.csv` | `predset` `clim`, column `gap` |
+| semivariogram ranges of the plot attributes | 6 to 15 km (biomass 10.6, basal area 6.4, dominant species' share 14.9) | `variogram_range.csv` | column `range_raw_km` |
 | environmental representativeness | Kolmogorov–Smirnov distance up to 0.12; sample-to-area ratio 0.75 to 1.41 across the deciles | `env_repr_quantiles.csv`, `env_repr_pc1_ratio.csv` | `KS_D`; `repr_ratio` |

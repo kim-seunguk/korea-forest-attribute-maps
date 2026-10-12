@@ -1,40 +1,38 @@
-code,species,sci_name,group
-0,고로쇠나무,Acer pictum var. mono,OtherBroadleaf
-1,사방오리,Alnus firma,Betulaceae
-2,자작나무,Betula pendula,Betulaceae
-3,박달나무,Betula schmidtii,Betulaceae
-4,서어나무,Carpinus laxiflora,Betulaceae
-5,개서어나무,Carpinus tschonoskii,Betulaceae
-6,밤나무,Castanea crenata,Castaneoid
-7,구실잣밤나무,Castanopsis sieboldii,Castaneoid
-8,팽나무,Celtis sinensis,Ulmaceae
-9,편백,Chamaecyparis obtusa,OtherConifer
-10,층층나무,Cornus controversa,OtherBroadleaf
-11,삼나무,Cryptomeria japonica,OtherConifer
-12,물푸레나무,Fraxinus chinensis var. rhynchophylla,OtherBroadleaf
-13,가래나무,Juglans mandshurica,OtherBroadleaf
-14,일본잎갈나무,Larix kaempferi,OtherConifer
-15,백합나무,Liriodendron tulipifera,OtherBroadleaf
-16,산뽕나무,Morus indica,OtherBroadleaf
-17,오동나무,Paulownia tomentosa,OtherBroadleaf
-18,소나무,Pinus densiflora,Pinus
-19,잣나무,Pinus koraiensis,Pinus
-20,리기다소나무,Pinus rigida,Pinus
-21,곰솔,Pinus thunbergii,Pinus
-22,굴피나무,Platycarya strobilacea,OtherBroadleaf
-23,은사시나무,Populus × tomentiglandulosa,OtherBroadleaf
-24,잔털벚나무,Prunus serrulata var. pubescens,OtherBroadleaf
-25,상수리나무,Quercus acutissima,Quercus
-26,갈참나무,Quercus aliena,Quercus
-27,떡갈나무,Quercus dentata,Quercus
-28,신갈나무,Quercus mongolica,Quercus
-29,졸참나무,Quercus serrata,Quercus
-30,굴참나무,Quercus variabilis,Quercus
-31,아까시나무,Robinia pseudoacacia,OtherBroadleaf
-32,버드나무,Salix pierotii,OtherBroadleaf
-33,때죽나무,Styrax japonicus,OtherBroadleaf
-34,피나무,Tilia amurensis,Tilia
-35,찰피나무,Tilia mandshurica,Tilia
-36,느릅나무,Ulmus davidiana,Ulmaceae
-37,느티나무,Zelkova serrata,Ulmaceae
-38,기타,Other,Other
+code,species,sci_name,group,code_v1
+0,고로쇠나무,Acer pictum var. mono,OtherBroadleaf,0
+1,사방오리,Alnus firma,Betulaceae,1
+2,자작나무,Betula pendula,Betulaceae,2
+3,박달나무,Betula schmidtii,Betulaceae,3
+4,서어나무,Carpinus laxiflora,Betulaceae,4
+5,개서어나무,Carpinus tschonoskii,Betulaceae,5
+6,밤나무,Castanea crenata,Castaneoid,6
+7,팽나무,Celtis sinensis,Ulmaceae,8
+8,편백,Chamaecyparis obtusa,OtherConifer,9
+9,층층나무,Cornus controversa,OtherBroadleaf,10
+10,삼나무,Cryptomeria japonica,OtherConifer,11
+11,물푸레나무,Fraxinus chinensis var. rhynchophylla,OtherBroadleaf,12
+12,가래나무,Juglans mandshurica,OtherBroadleaf,13
+13,일본잎갈나무,Larix kaempferi,OtherConifer,14
+14,백합나무,Liriodendron tulipifera,OtherBroadleaf,15
+15,산뽕나무,Morus indica,OtherBroadleaf,16
+16,소나무,Pinus densiflora,Pinus,18
+17,잣나무,Pinus koraiensis,Pinus,19
+18,리기다소나무,Pinus rigida,Pinus,20
+19,곰솔,Pinus thunbergii,Pinus,21
+20,굴피나무,Platycarya strobilacea,OtherBroadleaf,22
+21,은사시나무,Populus × tomentiglandulosa,OtherBroadleaf,23
+22,잔털벚나무,Prunus serrulata var. pubescens,OtherBroadleaf,24
+23,상수리나무,Quercus acutissima,Quercus,25
+24,갈참나무,Quercus aliena,Quercus,26
+25,떡갈나무,Quercus dentata,Quercus,27
+26,신갈나무,Quercus mongolica,Quercus,28
+27,졸참나무,Quercus serrata,Quercus,29
+28,굴참나무,Quercus variabilis,Quercus,30
+29,아까시나무,Robinia pseudoacacia,OtherBroadleaf,31
+30,버드나무,Salix pierotii,OtherBroadleaf,32
+31,때죽나무,Styrax japonicus,OtherBroadleaf,33
+32,피나무,Tilia amurensis,Tilia,34
+33,찰피나무,Tilia mandshurica,Tilia,35
+34,느릅나무,Ulmus davidiana,Ulmaceae,36
+35,느티나무,Zelkova serrata,Ulmaceae,37
+36,기타,Other,Other,38

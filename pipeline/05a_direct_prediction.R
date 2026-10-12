@@ -33,7 +33,7 @@
 #   data/interim/covar_5179_s2/s2_bands/s2band_%02d.tif          (42 single-band S2 medians)
 #   data/interim/fmap_30m/<vintage>/{V_VG,V_DC,V_DN,V_FROR}.tif  (forest-type map)
 #   outputs/nfi8/{cv_folds.csv, m2_targets.csv}  · data/interim/nfi8/rd_points.csv  · data/interim/nfi8/plot_features_s2.csv
-#   data/species_codes.csv                                       (code to species name, the full legend)
+#   data/species_codes.csv                                       (code to species name, 0–36, with the version 1 code)
 # OUTPUT: outputs/nfi8/m8_maps_30m/ftm_{conifer_fraction,dominant_species,biomass,shannon}_30m.tif
 #         outputs/nfi8/m8_uncertainty_30m/ftm_{conifer_fraction,biomass,shannon}_sd_30m.tif
 #         outputs/nfi8/m8_uncertainty_30m/ftm_dominant_species_uncertainty_30m.tif  (1 - vote margin)
@@ -95,9 +95,9 @@ DT[, domsp := enc2utf8(as.character(domsp_full))]
 DT[domsp %in% c("강원지방소나무","중부지방소나무"), domsp := "소나무"]                    # pine race -> species (idempotent if merged at 04b)
 DT[!(domsp %in% SP_SET) & !is.na(domsp) & domsp != "", domsp := "기타"]                  # collapse to the legend's class set
 # The rare-species rule the validation applies (07a, 07b, 07d, 07g: fewer than MIN_SP plots over the whole
-# table -> 기타) decides the class set here too. A legend species below MIN_SP joins 기타 and its code is left
-# unused; codes are never renumbered, so the legend file keeps every row and the trained classes are the
-# subset written to m8_domsp_legend_used.csv.
+# table -> 기타) decides the class set here too. A legend species below MIN_SP joins 기타. The legend lists the
+# 37 classes of version 2 with contiguous codes 0–36 (code_v1 keeps the version 1 code), so a species that
+# climbs back above MIN_SP needs a code there first; the trained classes are written to m8_domsp_legend_used.csv.
 sp_n   <- DT[!is.na(domsp) & domsp != "", .N, by = domsp]
 stopifnot(all(sp_n[N >= MIN_SP & domsp != "기타", domsp] %in% SP_SET))                 # a new common species needs a legend code first
 drop_sp <- setdiff(SP_SET[SP_SET != "기타"], sp_n[N >= MIN_SP, domsp])

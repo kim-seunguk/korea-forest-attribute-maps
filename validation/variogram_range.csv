@@ -1,0 +1,6 @@
+target,range_raw_km,range_detrended_km,sill
+Bio_a_ha,10.6,10.6,6186
+BAPH,6.4,6.4,162.6
+dom_ba_share,14.9,10.6,0.04439
+block_km_variogram,15,,
+CHOSEN_block_km,50,,

@@ -1,38 +1,38 @@
-code,species_kr,sci_name,n_obs,prevalence,producers_acc,users_acc,f1
-0,고로쇠나무,Acer pictum var. mono,75,0.0058,0.0133,1,0.0263
-1,사방오리,Alnus firma,48,0.0037,0,0,0
-2,자작나무,Betula pendula,26,0.002,0,,0
-3,박달나무,Betula schmidtii,32,0.0025,0,,0
-4,서어나무,Carpinus laxiflora,52,0.004,0,,0
-5,개서어나무,Carpinus tschonoskii,94,0.0072,0,0,0
-6,밤나무,Castanea crenata,495,0.038,0.303,0.3722,0.3341
-8,팽나무,Celtis sinensis,35,0.0027,0,,0
-9,편백,Chamaecyparis obtusa,132,0.0101,0.2348,0.7381,0.3563
-10,층층나무,Cornus controversa,105,0.0081,0.0381,0.6667,0.0721
-11,삼나무,Cryptomeria japonica,55,0.0042,0,,0
-12,물푸레나무,Fraxinus chinensis var. rhynchophylla,86,0.0066,0.0116,0.5,0.0227
-13,가래나무,Juglans mandshurica,60,0.0046,0.05,0.6,0.0923
-14,일본잎갈나무,Larix kaempferi,451,0.0346,0.5211,0.6753,0.5882
-15,백합나무,Liriodendron tulipifera,51,0.0039,0.4706,0.8889,0.6154
-16,산뽕나무,Morus indica,56,0.0043,0,,0
-18,소나무,Pinus densiflora,3758,0.2886,0.8592,0.6015,0.7076
-19,잣나무,Pinus koraiensis,359,0.0276,0.3983,0.7772,0.5267
-20,리기다소나무,Pinus rigida,657,0.0504,0.3044,0.545,0.3906
-21,곰솔,Pinus thunbergii,477,0.0366,0.4969,0.6108,0.548
-22,굴피나무,Platycarya strobilacea,105,0.0081,0,,0
-23,은사시나무,Populus × tomentiglandulosa,18,0.0014,0,,0
-24,잔털벚나무,Prunus serrulata var. pubescens,69,0.0053,0,,0
-25,상수리나무,Quercus acutissima,557,0.0428,0.3232,0.4423,0.3734
-26,갈참나무,Quercus aliena,169,0.013,0,0,0
-27,떡갈나무,Quercus dentata,55,0.0042,0,,0
-28,신갈나무,Quercus mongolica,1928,0.148,0.7018,0.4417,0.5422
-29,졸참나무,Quercus serrata,584,0.0448,0.0377,0.1528,0.0604
-30,굴참나무,Quercus variabilis,1358,0.1043,0.5641,0.4161,0.4789
-31,아까시나무,Robinia pseudoacacia,481,0.0369,0.422,0.5472,0.4765
-32,버드나무,Salix pierotii,27,0.0021,0,,0
-33,때죽나무,Styrax japonicus,39,0.003,0,,0
-34,피나무,Tilia amurensis,47,0.0036,0.0213,0.25,0.0392
-35,찰피나무,Tilia mandshurica,22,0.0017,0,,0
-36,느릅나무,Ulmus davidiana,40,0.0031,0,,0
-37,느티나무,Zelkova serrata,48,0.0037,0,0,0
-38,기타,Other,372,0.0286,0.0618,0.4894,0.1098
+code,code_v1,species_kr,sci_name,n_obs,prevalence,producers_acc,users_acc,f1
+0,0,고로쇠나무,Acer pictum var. mono,75,0.0058,0.0133,1,0.0263
+1,1,사방오리,Alnus firma,48,0.0037,0,0,0
+2,2,자작나무,Betula pendula,26,0.002,0,,0
+3,3,박달나무,Betula schmidtii,32,0.0025,0,,0
+4,4,서어나무,Carpinus laxiflora,52,0.004,0,,0
+5,5,개서어나무,Carpinus tschonoskii,94,0.0072,0,0,0
+6,6,밤나무,Castanea crenata,495,0.038,0.303,0.3722,0.3341
+7,8,팽나무,Celtis sinensis,35,0.0027,0,,0
+8,9,편백,Chamaecyparis obtusa,132,0.0101,0.2348,0.7381,0.3563
+9,10,층층나무,Cornus controversa,105,0.0081,0.0381,0.6667,0.0721
+10,11,삼나무,Cryptomeria japonica,55,0.0042,0,,0
+11,12,물푸레나무,Fraxinus chinensis var. rhynchophylla,86,0.0066,0.0116,0.5,0.0227
+12,13,가래나무,Juglans mandshurica,60,0.0046,0.05,0.6,0.0923
+13,14,일본잎갈나무,Larix kaempferi,451,0.0346,0.5211,0.6753,0.5882
+14,15,백합나무,Liriodendron tulipifera,51,0.0039,0.4706,0.8889,0.6154
+15,16,산뽕나무,Morus indica,56,0.0043,0,,0
+16,18,소나무,Pinus densiflora,3758,0.2886,0.8592,0.6015,0.7076
+17,19,잣나무,Pinus koraiensis,359,0.0276,0.3983,0.7772,0.5267
+18,20,리기다소나무,Pinus rigida,657,0.0504,0.3044,0.545,0.3906
+19,21,곰솔,Pinus thunbergii,477,0.0366,0.4969,0.6108,0.548
+20,22,굴피나무,Platycarya strobilacea,105,0.0081,0,,0
+21,23,은사시나무,Populus × tomentiglandulosa,18,0.0014,0,,0
+22,24,잔털벚나무,Prunus serrulata var. pubescens,69,0.0053,0,,0
+23,25,상수리나무,Quercus acutissima,557,0.0428,0.3232,0.4423,0.3734
+24,26,갈참나무,Quercus aliena,169,0.013,0,0,0
+25,27,떡갈나무,Quercus dentata,55,0.0042,0,,0
+26,28,신갈나무,Quercus mongolica,1928,0.148,0.7018,0.4417,0.5422
+27,29,졸참나무,Quercus serrata,584,0.0448,0.0377,0.1528,0.0604
+28,30,굴참나무,Quercus variabilis,1358,0.1043,0.5641,0.4161,0.4789
+29,31,아까시나무,Robinia pseudoacacia,481,0.0369,0.422,0.5472,0.4765
+30,32,버드나무,Salix pierotii,27,0.0021,0,,0
+31,33,때죽나무,Styrax japonicus,39,0.003,0,,0
+32,34,피나무,Tilia amurensis,47,0.0036,0.0213,0.25,0.0392
+33,35,찰피나무,Tilia mandshurica,22,0.0017,0,,0
+34,36,느릅나무,Ulmus davidiana,40,0.0031,0,,0
+35,37,느티나무,Zelkova serrata,48,0.0037,0,0,0
+36,38,기타,Other,372,0.0286,0.0618,0.4894,0.1098

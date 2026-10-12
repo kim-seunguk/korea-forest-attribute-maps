@@ -71,8 +71,8 @@ STAGING = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_staging_v2')
 MANIFESTS = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_manifests_v2')
 
 COLLECTION = 'korea-forest-attributes-v2'
-TIERS = ('ftm',)                    # the predictor set the deposit carries; its token is in every file name
-TABLE = 'plot_ids_%s_v2'            # the plot-id table per predictor set, read by the viewer
+TIERS = ('ftm',)                    # the predictor set the deposit carries; version 2 file names carry no token
+TABLE = 'plot_ids_v2'               # the plot-id table, read by the viewer
 
 # The four attributes, as they are named in the delivered files and as they are carried in the
 # deposited lookup table. dtype and nodata follow the delivered direct maps, so the two families
@@ -82,7 +82,7 @@ DERIVED = [
     ('conifer_fraction', 'coniferous_fraction',      'float32', np.nan, '0-1 fraction', '0-1'),
     ('biomass',          'aboveground_biomass_Mgha', 'float32', np.nan, 'Mg ha-1',      '>=0'),
     ('shannon',          'shannon_diversity',        'float32', np.nan, 'unitless',     '>=0'),
-    ('dominant_species', 'dominant_species_code',    'uint8',   255,    'class code',   '0-38'),
+    ('dominant_species', 'dominant_species_code',    'uint8',   255,    'class code',   '0-36'),
 ]
 # One band id per quantity, shared by both families, so switching family in a viewer does not
 # change what the band is called. Keyed on the variable text data_records.csv carries and on the
@@ -127,7 +127,7 @@ def band_name(variable):
 
 
 def read_lookup(tier):
-    path = os.path.join(DEPOSIT, 'plot_lookup_%s.csv' % tier)
+    path = os.path.join(DEPOSIT, 'plot_lookup.csv')
     with io.open(path, encoding='utf-8-sig') as fh:
         rows = list(csv.DictReader(fh))
     idx = [int(r['plot_index']) for r in rows]
@@ -138,12 +138,12 @@ def read_lookup(tier):
 
 def derive(tier):
     """One raster per attribute, by substituting the plot index with the matched plot's value."""
-    src = os.path.join(DEPOSIT, 'imputation_%s.tif' % tier)
+    src = os.path.join(DEPOSIT, 'plot_index_30m.tif')
     rows = read_lookup(tier)
     n = len(rows)
     out_paths = []
     for var, col, dtype, nodata, _u, _r in DERIVED:
-        dst = os.path.join(STAGING, 'imputed_%s_%s_30m.tif' % (tier, var))
+        dst = os.path.join(STAGING, 'imputed_%s_30m.tif' % var)
         out_paths.append((var, dst))
         if os.path.exists(dst):
             print('  %-42s already staged' % os.path.basename(dst))
@@ -166,11 +166,14 @@ def derive(tier):
             with rasterio.open(dst, 'w', **prof) as d:
                 for _, win in s.block_windows(1):
                     a = s.read(1, window=win)
-                    i = np.where(np.isfinite(a), np.rint(a), 0).astype('int64')
+                    valid = np.isfinite(a)
+                    if s.nodata is not None and np.isfinite(s.nodata):
+                        valid &= a != s.nodata                  # the index is uint16 with 0 as nodata
+                    i = np.where(valid, np.rint(a), 0).astype('int64')
                     np.clip(i, 0, n, out=i)
                     d.write(lut[i].astype(dtype), 1, window=win)
-        print('  %-42s derived from imputation_%s.tif%s'
-              % (os.path.basename(dst), tier,
+        print('  %-42s derived from plot_index_30m.tif%s'
+              % (os.path.basename(dst),
                  '  (%d plots have no value; left nodata)' % blank if blank else ''))
     return out_paths
 
@@ -192,7 +195,7 @@ def main():
         for var, _col, _dt, _nd, unit, vrange in DERIVED:
             dst = derived[var]
             images.append((dst, os.path.splitext(os.path.basename(dst))[0], band_name(var),
-                           {'family': 'plot-index', 'predictor_set': tier, 'variable': var,
+                           {'family': 'plot-index', 'variable': var,
                             'unit': unit, 'valid_range': vrange,
                             'source': 'derived from the deposited plot index and lookup table'}))
 
@@ -202,8 +205,7 @@ def main():
         if not os.path.exists(src):
             raise SystemExit('missing %s - stage the deposit first' % src)
         images.append((src, os.path.splitext(r['file'])[0], band_name(r['variable']),
-                       {'family': r['family'], 'predictor_set': r['predictor_set'],
-                        'variable': r['variable'], 'unit': r['unit'],
+                       {'family': r['family'], 'variable': r['variable'], 'unit': r['unit'],
                         'valid_range': r['valid_range']}))
 
     coll = 'projects/%s/assets/%s' % (PROJECT, COLLECTION)
@@ -320,7 +322,7 @@ def ingest_tables(creds):
     print('== plot-id tables ==')
     for tier in TIERS:
         rows = read_lookup(tier)
-        name = TABLE % tier
+        name = TABLE
         path = os.path.join(STAGING, name + '.csv')
         with io.open(path, 'w', encoding='utf-8', newline='') as fh:
             w = csv.writer(fh)

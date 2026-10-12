@@ -13,22 +13,24 @@ authors:
   - family-names: Kim
     given-names: Seunguk
     affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0009-0008-4381-924X"
   - family-names: Shin
     given-names: Joong Hoon
     affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0001-5318-1632"
   - family-names: Han
     given-names: Hee
     affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0002-2588-7176"
   - family-names: Choe
     given-names: Hyeyeong
     affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0003-2130-1622"
 references:
   - type: data
     title: "Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025) from direct prediction and plot-index imputation"
     version: "2.0"
-    # TODO: this is the concept DOI, which resolves to the newest version; replace it with the
-    # version 2 DOI once that record is published. Version 1 is 10.5281/zenodo.21701424.
-    doi: "10.5281/zenodo.21701423"
+    doi: "10.5281/zenodo.23313068"
     year: 2026
     authors:
       - family-names: Kim

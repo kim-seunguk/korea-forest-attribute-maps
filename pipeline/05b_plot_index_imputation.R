@@ -291,7 +291,7 @@ parallel::clusterExport(cl, "impute_chunk")
 
 out_r <- raster::raster(TD)
 raster::crs(out_r) <- "EPSG:5179"                               # stamp EPSG code (covar grid holds 5179 params but no authority code -> would ship as untagged)
-out_r <- raster::writeStart(out_r, filename = out_tif, overwrite = TRUE, datatype = "FLT4S",
+out_r <- raster::writeStart(out_r, filename = out_tif, overwrite = TRUE, datatype = "INT2U", NAflag = 0,   # categorical identifier: integer type, 0 = nodata
                             options = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"))
 dst_r <- raster::raster(TD)                                     # parallel nearest-reference distance raster, same grid
 raster::crs(dst_r) <- "EPSG:5179"

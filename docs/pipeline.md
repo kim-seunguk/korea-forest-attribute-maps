@@ -87,7 +87,8 @@ Freezing the folds once is what makes the accuracy figures comparable across sta
 ## 05 · The delivered products
 
 **Direct prediction** — one random forest per attribute, plus a per-cell uncertainty layer. Species
-with fewer than 20 reference plots are pooled into class 38, which leaves 37 classes.
+dominant on fewer than 20 reference plots are pooled into the other class, code 36, which leaves 37
+classes with codes 0 to 36.
 
 ```r
 source(here::here("pipeline", "05a_direct_prediction.R"))
@@ -100,6 +101,9 @@ reference library holds the 15,999 plots with a complete predictor record and a 
 source(here::here("pipeline", "05b_plot_index_imputation.R"))
 source(here::here("pipeline", "05c_index_to_attributes.R"))
 ```
+
+The index raster is written as a 16-bit unsigned integer with 0 as nodata, so GIS software treats it as
+categorical by default.
 
 Keep `IMPUTE_CORES` at 16 or below. A SOCK cluster stalls above roughly 24 workers.
 
@@ -138,7 +142,7 @@ map, `RICH_ONLY` for the richer Sentinel-2 features), and each run writes its ow
 `07f`, `07g`, `07o` and `07p` take the same `FTM_ONLY` switch and write `_ftm`-suffixed tables, and
 `07h`/`07i` read whichever set `NFIMAP_TIER` names (default `ftm`). The rest test specific claims: how
 much the forest-type map adds, whether accuracy holds by stand origin, what the uncertainty layers
-actually deliver, whether the survey year matters, how accuracy changes with the aggregation support
+actually deliver, whether the survey year matters, how accuracy changes with the level of aggregation
 (`07o`) and at the support of the inventory cluster (`07p`), whether the denser parts of the plot grid
 move the figures (`07q`), how the block size of the spatial folds was chosen (`07r`), and how the plots
 cover the climate and terrain of the mapped forest (`07s`). Bootstrap intervals resample inventory
