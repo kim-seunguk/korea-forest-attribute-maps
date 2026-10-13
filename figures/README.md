@@ -1,8 +1,7 @@
 # Figures
 
 Two of the paper's figures are generated from code, and one more script is kept as an optional view.
-The scripts keep the names they were released under, so the number in a script's name is not the
-number the figure carries in the paper; the table gives both.
+The number in a script's name is not the figure's number in the paper; the table gives both.
 
 | script | number in the paper | what it shows |
 |---|---|---|
@@ -11,8 +10,8 @@ number the figure carries in the paper; the table gives both.
 | [`figA1_confusion.R`](figA1_confusion.R) | not in the paper | the dominant-species confusion matrix 07d writes, an optional view |
 
 The paper's other figures have no script here: the workflow diagram is drawn in presentation
-software, and the study area, with the plots drawn as 1 km cluster points, and the national maps are
-composed in GIS software over the released rasters.
+software, and the study-area and national maps are composed in GIS software over the released
+rasters.
 
 `theme.R` and `species_palette.R` are shared. Source the figure script; it pulls in the theme itself.
 
@@ -31,11 +30,10 @@ not distributed.
 
 ## Conventions
 
-- Figures read from the CSV and raster outputs on disk. They never recompute a statistic, so a
-  number in a figure and the same number in a table cannot disagree.
+- Figures read from the CSV and raster outputs on disk. They never recompute a statistic.
 - `ggplot2` with `patchwork`, on the shared `theme_fig(base_size = 11)`.
 - Colour-blind-safe palettes throughout. `species_palette.R` holds the species symbology, read from
-  the same table the published maps are coloured by, so the legends cannot drift apart. It is used
+  the same table the published maps are coloured by. It is used
   by the map figures, which are composed in GIS rather than here.
 - Panel labels are lower case in brackets, `(a)`, `(b)`. Legends sit inside the panel.
 - Captions live in the manuscript, not in the image.

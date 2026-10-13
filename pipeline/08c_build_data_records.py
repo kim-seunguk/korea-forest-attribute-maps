@@ -1,9 +1,7 @@
 """08c_build_data_records.py — the machine-readable file manifest that ships with the dataset.
 
 Opens every released raster and emits one row per file describing it: data type, nodata value,
-unit, valid range, pixel size, grid origin, dimensions and CRS. Reading this from the files
-themselves means the published table cannot drift from what was actually written, which
-hand-typing it could not guarantee.
+unit, valid range, pixel size, grid origin, dimensions and CRS.
 
 Categorical layers name their legend file and uncertainty layers state which direction is worse.
 

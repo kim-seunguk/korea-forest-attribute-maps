@@ -8,10 +8,8 @@
 # matches each held-out plot to its single most similar training plot in random-forest proximity space.
 #
 # The matching axis is the plot's field forest structure — forest type, diameter class and density
-# class. Those are strong, directly observed classes. The four published attributes are not matched
-# on; they are read off whichever plot the structure selected, so the accuracy reported here is what
-# a user gets rather than what the matching was tuned to produce, and it mirrors how the delivered
-# product is consumed.
+# class. The four published attributes are not matched on; they are read off whichever plot the
+# structure selected, as in the delivered product.
 #
 # Rows are also emitted split by stand origin, natural against planted, mirroring the same split on
 # the direct route.

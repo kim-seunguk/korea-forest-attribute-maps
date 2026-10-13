@@ -59,7 +59,7 @@ This repository holds code, not data. It expects the following under `data/raw/`
 | Topography | NASA SRTM, SRTMGL1 v3, exported onto the product grid via Google Earth Engine |
 | Sentinel-2 | European Space Agency Copernicus, via Google Earth Engine |
 
-None of these are ours to redistribute. Each must be obtained from the provider named above.
+Each must be obtained from the provider named above.
 
 **Inventory plot coordinates are confidential and are in neither this repository nor the deposited
 dataset.** `.gitignore` blocks any `*_coords.csv` from being committed.

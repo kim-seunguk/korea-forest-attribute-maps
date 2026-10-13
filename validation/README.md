@@ -103,22 +103,20 @@ Columns particular to one file:
   assigned, where it is undefined rather than zero.
 - `m9_consistency_ftm.csv` — the `note` column defines each metric.
 
-## The validation design, and why the scheme matters
+## The validation design
 
 Random folds place training and validation plots in the same neighbourhood, so they measure spatial
 interpolation as well as prediction, and figures from different schemes are not comparable. With
 the clusters kept whole, the gap between random and spatial-block folds under the delivered set is
-0.011 to 0.023 across the four attributes (`m4a_ladder_ftmonly.csv`, `random` minus `spatial`). The
-gap is a property of the predictors, not of the blocks: a model built from climate, terrain and
-coordinates alone, with no satellite data, reads 0.07 for biomass under random folds and 0.02 under
-blocks (`m4a_ladder_baseonly.csv`, `predset` `clim`), and `block_size_test.csv` follows that gap
+0.011 to 0.023 across the four attributes (`m4a_ladder_ftmonly.csv`, `random` minus `spatial`). A
+model built from climate, terrain and coordinates alone reads 0.07 for biomass under random folds and
+0.02 under blocks (`m4a_ladder_baseonly.csv`, `predset` `clim`); `block_size_test.csv` gives the gap
 across block sizes.
 
 The inventory is not a uniform 4 km grid: 24.7 % of the plots sit on the 1 and 2 km supplementary
 spacing of the metropolitan areas and Jeju, so an unweighted figure counts those regions more
 heavily per unit of forest. `m26_density_weighted.csv` reports every figure with each plot weighted
-by the area it represents; the change is at most 0.016. The per-plot spacing table that weighting
-is built from carries plot identifiers and is not distributed.
+by the area it represents; the change is at most 0.016.
 
 ## Where the headline numbers come from
 

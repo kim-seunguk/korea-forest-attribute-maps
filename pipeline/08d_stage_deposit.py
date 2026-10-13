@@ -4,9 +4,8 @@ The staged folder is uploaded as a new version of the dataset's record, so the v
 repository reserves for that draft is passed in through NFIMAP_DEPOSIT_DOI and written into the
 README.
 
-WHY a separate staged tree rather than uploading from outputs/nfi8/ directly: rasters of this dataset
-have been corrupted by a GDAL PAM statistics write overrunning the IFD0 tile index, on files a GIS had
-opened. The deposit therefore gets its own directory that nothing else touches, and the integrity
+A GDAL PAM statistics write, on files a GIS had opened, has corrupted rasters of this dataset by
+overrunning the IFD0 tile index. The deposit therefore gets its own directory that nothing else touches, and the integrity
 gate runs against that copy, not against the working tree.
 
 The pipeline writes names that carry the predictor-set token (naming is decided once, in R/paths.R);
@@ -515,8 +514,8 @@ derived there from the plot index and the lookup table in this record.
 
 **The two families answer different questions.** Direct prediction is more accurate attribute by
 attribute. Plot-index imputation is less accurate per attribute, but every cell carries a combination
-of attributes that was actually observed together in one field plot, which matters if you need the
-attributes to be mutually consistent rather than individually optimal.
+of attributes that was observed together in one field plot, which matters when an application reads
+several attributes of a cell together.
 
 ## Files
 

@@ -9,19 +9,12 @@
 #   x = 14 climate, terrain and position variables + 42 Sentinel-2 seasonal medians
 #       + the forest-type map attributes and stand origin (60 predictors, the same set as 05a)
 #
-# The four published attributes are deliberately not part of y. Matching on them would tune the
-# selection to the quantities the accuracy is then reported for. Structure is directly observed and
-# discriminates well, whereas diversity and biomass are weak derived targets that would split the
-# forest almost at random and pull ecologically dissimilar plots together. Keeping y field-measured
-# while x comes from the map also keeps the matching non-circular. Stand age is not matched on
-# either; it is largely implied by diameter class and travels with the matched plot.
+# The four published attributes are not part of y. Stand age is not matched on; it travels with the
+# matched plot.
 #
-# Why the delivered map uses every plot
-#   k = 1 imputation is donor-based, so a plot held out of the library can never appear on the map.
-#   Holding out 20 % would permanently erase the rare forest types and species that fell in that
-#   20 %. The library is therefore all plots with a complete record, and accuracy is measured
-#   separately in 07b under spatial cross-validation and a disjoint test set, which is a conservative
-#   bound on this map.
+# The reference library
+#   The library is all plots with a complete record; accuracy is measured separately in 07b under
+#   spatial cross-validation and a disjoint test set.
 #
 #   ! Sampling this map at plot locations does not validate it. Every plot is a donor, and most
 #     cells containing a plot match it back to itself, so most of the comparison is a plot against

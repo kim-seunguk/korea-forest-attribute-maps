@@ -11,7 +11,7 @@ SRTM elevation resampled onto the product grid (`02f`).
 
 Everything is written under `outputs/nfi8/` and `data/interim/`, neither of which is in this
 repository. Stage the source data under `data/raw/` first; the README lists what is needed and where
-to obtain it. The manuscript and its build are not part of this repository.
+to obtain it.
 
 ## Setup
 
@@ -82,8 +82,6 @@ the test split are assigned by inventory cluster, so the subplots of one cluster
 block edge or the split. `04b_build_targets.R` builds the four targets from basal area weighted by
 each tree's expansion factor.
 
-Freezing the folds once is what makes the accuracy figures comparable across stages.
-
 ## 05 · The delivered products
 
 **Direct prediction** — one random forest per attribute, plus a per-cell uncertainty layer. Species
@@ -140,9 +138,9 @@ rasters would scramble them.
 predictor set (`FTM_ONLY` for the delivered set, `BASE_ONLY` for the sets without the forest-type
 map, `RICH_ONLY` for the richer Sentinel-2 features), and each run writes its own table; `07d`,
 `07f`, `07g`, `07o` and `07p` take the same `FTM_ONLY` switch and write `_ftm`-suffixed tables, and
-`07h`/`07i` read whichever set `NFIMAP_TIER` names (default `ftm`). The rest test specific claims: how
-much the forest-type map adds, whether accuracy holds by stand origin, what the uncertainty layers
-actually deliver, whether the survey year matters, how accuracy changes with the level of aggregation
+`07h`/`07i` read whichever set `NFIMAP_TIER` names (default `ftm`). The rest measure how
+much the forest-type map adds, whether accuracy holds by stand origin, how well the uncertainty layers
+are calibrated, whether the survey year matters, how accuracy changes with the level of aggregation
 (`07o`) and at the support of the inventory cluster (`07p`), whether the denser parts of the plot grid
 move the figures (`07q`), how the block size of the spatial folds was chosen (`07r`), and how the plots
 cover the climate and terrain of the mapped forest (`07s`). Bootstrap intervals resample inventory

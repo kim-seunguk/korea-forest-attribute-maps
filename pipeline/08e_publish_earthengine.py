@@ -4,13 +4,13 @@ The archive is the citable copy. This is the one people can open: it ingests the
 ImageCollection, so a reader can look at them in a browser and use them in Earth Engine without
 downloading several gigabytes.
 
-Everything published here comes from the deposit, and only from the deposit. The ten deposited
+Everything published here comes from the deposit. The ten deposited
 rasters are staged as they are. The four attributes of the plot-index family are DERIVED here, by
 substituting each cell's plot index with that plot's value from the deposited lookup table — the
 same operation 05c performs, done from the archived inputs so that every layer in the viewer is
 reproducible from the archive alone.
 
-Deriving rather than uploading outputs/nfi8/attributes_ftm/ is not a convenience. Those rasters carry
+The rasters in outputs/nfi8/attributes_ftm/ carry
 a dominant-species legend of their own, built from whatever species the reference library happened
 to contain (139 classes), so their codes mean different species from the delivered 37-class map. The
 deposited lookup carries dominant_species_code in the published coding, so deriving from it puts both
@@ -27,8 +27,8 @@ Engine and a zoomed-out view in a GIS show the same thing:
     everything continuous                     MEAN
 
 MODE, not a sample, for the plot index: sampling keeps whichever single child cell it lands on and
-leaves a hole wherever that one is empty, which thins the index map badly at low zoom. The mode of a
-block is a plot that really was matched somewhere in it.
+leaves a hole wherever that one is empty, which thins the index map badly at low zoom. At low zoom each
+cell shows the plot matched most often in its block.
 
 CONFIGURE  Both are yours, and neither is in this repository:
     EE_PROJECT    the Earth-Engine-enabled Cloud project the assets live under
@@ -50,8 +50,7 @@ Everything runs through the Python client libraries, so neither the gcloud SDK n
 command line has to be installed. `earthengine authenticate` once is enough: that credential carries
 cloud-platform and devstorage.full_control, which covers the bucket too.
 
-! Run 08a_verify_raster_integrity.py first. Publishing a corrupted raster is worse than not
-  publishing it, because the damage is then downstream of a citable identifier.
+! Run 08a_verify_raster_integrity.py first.
 ! The deposit is read only. Derived rasters are written to a separate staging directory.
 """
 import csv

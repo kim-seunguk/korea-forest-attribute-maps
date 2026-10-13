@@ -4,15 +4,14 @@
 # another. This turns that difference into a curve. The spatial-CV out-of-fold predictions are
 # aggregated into progressively coarser square units and R2, RMSE and MBE are recomputed at each.
 #
-# Aggregation raises R2 on its own, so the curve is meaningless without controls. Two are carried:
+# Aggregation raises R2 on its own, so two controls are carried:
 #   (1) RMSE and MBE in the original units alongside it, which averaging cannot inflate the way it
 #       inflates a variance ratio.
 #   (2) a permutation control — predictions shuffled across the country, then the same aggregation,
 #       which should leave R2 at or below zero at every support.
 #
-# ! The MIN_PLOTS guard is not decoration. Aggregating to units that hold one or two plots lets a
-#   handful of sparse units carry the whole statistic. The guard is exposed as an output column
-#   rather than fixed, so a reader can see what any choice of it would have given.
+# ! Aggregating to units that hold one or two plots lets a handful of sparse units carry the whole
+#   statistic. Results are written for each value in MIN_PLOTS_SET, with min_plots as an output column.
 #
 # In  : outputs/<VERSION>/m4a_pred_points<IN_SUF>.csv  (per-plot spatial-CV out-of-fold obs/pred, direct route)
 #       outputs/<VERSION>/cv_folds.csv                 (Plot_ID, UTMK_X, UTMK_Y in EPSG:5179 metres)
