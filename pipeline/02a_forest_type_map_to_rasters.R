@@ -6,7 +6,7 @@
 # edition, so that a run can be tied to a specific edition rather than to whatever was on disk.
 #
 # The map also carries stand age and stand height. Neither is rasterized: no model reads them, and
-# the age class the plot-index product delivers is the plot's own field record, not this map's.
+# no product delivers them.
 #
 # The source is already on EPSG:5179, so nothing is reprojected and no resampling loss is incurred.
 #
@@ -49,10 +49,9 @@ template <- terra::rast(NAT_EXT, resolution = RES, crs = OUT_CRS)   # empty mast
 # "10".."77", DMCLS_CD "0/1/2/3", DNST_CD "A/B/C".
 # CRS auto-reads as EPSG:5179 already, so st_transform below is a no-op safety.
 # The ONLY unmapped KOFTR_GROU is 78 = 죽림 (bamboo, FRTP_CD=4) — a few per cent nationally,
-# concentrated in the south, with its structural attributes blank. It is left NA deliberately:
-# bamboo carries no structural attributes and does not appear in the forest-type classification the
-# plots produce in 01b, so mapping it here would put a class on the map that the plot data cannot
-# match. The per-province "unmapped V_*" counts logged below are that bamboo, not a failure.
+# concentrated in the south, with its structural attributes blank. It is left NA: bamboo carries
+# no structural attributes and has no counterpart among the plot forest types of 01b. The
+# per-province "unmapped V_*" counts logged below are that bamboo, not a failure.
 recl_vg <- fread(here("data","forest_type_recode.csv"), encoding = "UTF-8")
 vg_map  <- setNames(recl_vg$recl, as.character(recl_vg$KOFTR_GROU))   # 원본코드 -> 10..60 수종군
 dm_map  <- c(`0` = 3L, `1` = 12L, `2` = 24L, `3` = 36L)              # DMCLS_CD -> 대표경급(cm) 치수/소/중/대
@@ -80,8 +79,8 @@ make_tile <- function(shp, tile_dir) {
   if (length(miss)) log_t("  WARN", lyr, "missing fields ->", paste(miss, collapse = ", "))
   # forest = STORUNST == '1' (입목지, stocked; the polygons that carry species and structure).
   # Other values are left out rather than recoded — their meaning is edition-specific, so check the
-  # codebook of the edition you stage. FROR_CD (임종) is deliberately NOT filtered on: STORUNST
-  # already isolates stocked forest, and filtering on origin as well would punch holes in coverage.
+  # codebook of the edition you stage. FROR_CD (임종) is not filtered on; STORUNST already isolates
+  # stocked forest.
   if ("STORUNST" %in% flds) x <- x[as.character(x$STORUNST) == "1" & !is.na(x$STORUNST), ]
   else log_t("  NOTE", lyr, "no STORUNST field -> no forest filter applied")
   if (nrow(x) && "FROR_CD" %in% flds) {

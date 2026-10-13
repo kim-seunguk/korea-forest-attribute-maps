@@ -3,8 +3,7 @@
 The inventory visits a fifth of its plots each year, so the reference data spans 2021-2025 while the
 predictors are one five-year Sentinel-2 composite and a single forest-type map edition. A plot
 measured at the start of the period is therefore matched to imagery that partly postdates it. This
-reports accuracy separately for each survey year so that any trend across the period is visible
-rather than assumed absent.
+reports accuracy separately for each survey year.
 
 Reuses the per-plot spatially out-of-fold predictions 07g writes; no model is refitted.
 NFIMAP_TIER picks the 07g run: ftm (the default) reads the delivered set's *_ftm files, base reads

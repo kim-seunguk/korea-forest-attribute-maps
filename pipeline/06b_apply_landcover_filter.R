@@ -6,11 +6,9 @@
 #
 # Removed  built, water and barren — surfaces that cannot carry trees.
 # Kept     agriculture, grassland and wetland. Disagreement there often reflects real tree cover in
-#          orchards and sparse or edge regeneration, and removing it would be a large omission.
+#          orchards and sparse or edge regeneration.
 #
-# Predicted biomass deliberately plays no part in the decision. The models are fitted inside the
-# forest mask, so they return forest-like values even over an airport; using them to adjudicate
-# would just confirm the error. The land-cover classes decide.
+# Predicted biomass plays no part in the decision; the land-cover classes decide.
 #
 # Applied in place to both product families, and idempotent: it only ever sets cells to NA, never
 # restores them, so a second run changes nothing.

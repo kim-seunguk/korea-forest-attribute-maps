@@ -4,15 +4,13 @@
 # reference plot, in raster order, holding that plot's attributes under the names the dataset is
 # published with. Without it the index raster cannot be interpreted at all.
 #
-# The table is a renaming of the reference library 05b writes. It is kept as its own stage because
-# it is a deposited product and the published column names are decided here, not inside a modelling
-# script.
+# The table is a renaming of the reference library 05b writes. The published column names are set
+# here.
 #
-# What is deliberately absent:
+# Not in the table:
 #   coordinates  the plot locations are confidential and are never distributed. A user who needs
 #                more than this table joins nfi_plot_id to the inventory's own records.
-#   age class    the field class is coarse, and it is not one of the attributes this dataset stands
-#                behind. It is available through nfi_plot_id for anyone who wants it.
+#   age class    not delivered; it is available through nfi_plot_id.
 #
 # In : outputs/nfi8/models/train_reference_ftm.csv
 # Out: outputs/nfi8/plot_lookup_ftm.csv   (12 columns)

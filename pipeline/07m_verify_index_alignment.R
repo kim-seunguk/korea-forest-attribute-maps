@@ -1,5 +1,5 @@
-# 07m_verify_index_alignment.R — confirm the decoded attribute rasters really carry the matched
-# plot's values.
+# 07m_verify_index_alignment.R — confirm the decoded attribute rasters carry the matched plot's
+# values.
 # ------------------------------------------------------------------------------------------------
 # Stage 05c builds each attribute raster with terra::subst(index, from = plot_idx, to = attribute).
 # If the plot table and the index raster ever disagreed on what plot_idx means, that substitution

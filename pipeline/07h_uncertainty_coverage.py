@@ -2,8 +2,7 @@
 
 The released uncertainty layer is the standard deviation across the random-forest ensemble. Whether
 that quantity ranks locations sensibly is one question; whether a nominal 80 % interval built from
-it contains 80 % of the observations is a different and stricter one. This measures the second, so
-the layer can be described by what it delivers rather than by what its name suggests.
+it contains 80 % of the observations is a different and stricter one. This measures the second.
 
 Interval = pred +/- z * ensemble SD, treating the SD as Gaussian, z = 0.6745 / 1.2816 / 1.9600 for
 50 / 80 / 95 %. Coverage is the fraction of held-out plots falling inside it. Mean interval width is

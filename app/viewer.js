@@ -340,14 +340,11 @@ function internalOption(display, values, ids) {
   return display;
 }
 
-// Version 2 of the dataset: its own collection and plot-id table. The version 1 assets stay online
-// under their own names and are not read here.
+// The dataset's collection and plot-id table.
 var COLLECTION = 'projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2';
 var PLOT_IDS = ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_v2');
 
-// DOI_CONCEPT resolves to the newest version.
 var DOI = 'https://doi.org/10.5281/zenodo.23313068';
-var DOI_CONCEPT = '10.5281/zenodo.21701423';
 var CODE = 'https://github.com/kim-seunguk/korea-forest-attribute-maps';
 
 // ---- what can be shown ------------------------------------------------------------------------
@@ -423,8 +420,6 @@ function visCaption(band) {
          translatedMetadata(v.range_from || '', VIS_RANGE_TEXT);
 }
 
-// Version 2 file names carry no predictor-set token: one set is delivered.
-
 /** Asset id for a (family, band). */
 function assetId(family, band) {
   var stem;
@@ -441,7 +436,7 @@ function assetId(family, band) {
 }
 
 // Ramps read out of the ArcGIS project that drew the figures, so a value carries the same
-// colour in the paper and here. Uncertainty and the nearest-reference distance share one:
+// colour in the figures and here. Uncertainty and the nearest-reference distance share one:
 // dark is less to be trusted.
 var RAMPS = {
   conifer_fraction: ['1B7837', 'F7F7F7', '2166AC'],
@@ -472,9 +467,8 @@ function styled(family, band) {
     return {image: img.visualize({min: 0, max: 38, palette: SPECIES}), kind: 'species'};
   }
   if (band === 'plot_index') {
-    // The index runs to 15,999 and its value carries no order, so a ramp over it
-    // would be meaningless. Colouring by the remainder shows where the matched plot changes, which
-    // is the thing worth seeing: the mosaic of donor plots.
+    // The index carries no order, so it is coloured by its remainder mod 11, which shows where the
+    // matched plot changes.
     return {image: img.mod(11).visualize({min: 0, max: 10, palette: MOSAIC.concat(MOSAIC)}),
             kind: 'mosaic'};
   }
@@ -1117,7 +1111,7 @@ function syncLayoutSelector() {
   layoutSel.setValue(translatedOption(desktopMapDisplay, LAYOUT_TEXT), false);
 }
 
-// ---- what a reader has to know before believing any of it --------------------------------------
+// ---- usage notes -------------------------------------------------------------------------------
 var NOTE_IDS = [
   'note.spatial_pattern',
   'note.performance',
@@ -1210,7 +1204,7 @@ var desktopRoot = ui.Panel([
   bar([desktopInfo, desktopReadout])
 ], ui.Panel.Layout.flow('horizontal'), {stretch: 'both'});
 
-// Mobile deliberately exposes one map only. Its controls edit the desktop right-map state; the
+// Mobile exposes one map only. Its controls edit the desktop right-map state; the
 // desktop left-map state remains intact and returns when the desktop wipe is shown again.
 var mobileControlSync = false;
 var mobileMapHolder = ui.Panel([], ui.Panel.Layout.flow('vertical'),

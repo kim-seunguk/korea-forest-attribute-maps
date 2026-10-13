@@ -1,10 +1,9 @@
 # 07n_verify_biomass.R — cross-check the biomass values against the inventory totals.
 # ----------------------------------------------------------------------------
 # The delivered per-ha biomass and carbon are 04b's aggregation of the curated per-tree values,
-# Sum(Ba x EF) and Sum(Ca x EF), and the stages that build the maps deliberately keep those in place
-# of the ones 01b carries over from the curated subplot_list. A units or expansion-factor error in
-# that chain would make the direct route's weak biomass R2 an artefact of the data rather than a
-# real result, and it would not show up anywhere else.
+# Sum(Ba x EF) and Sum(Ca x EF), and the stages that build the maps keep those in place of the ones
+# 01b carries over from the curated subplot_list. A units or expansion-factor error in that chain
+# would not show up anywhere else.
 # This script re-derives both, independently of the pipeline, and cross-checks:
 #
 #   (A) per-tree coefficient chain (NIFoS):  Ba ?= Vol_eff*WD*BEF ;  Ca ?= Ba*CF ;
@@ -13,10 +12,8 @@
 #       compared against subplot_list for a random sample of ~SAMPLE_N 표본점 (cycle 8 / NFI-8).
 #       This is the same aggregation 04b performs, so it is also a check that the two agree.
 #
-# Small relative errors mean the units and expansion factors are right, so the weak biomass R² is a
-# real property of the attribute — a state variable dominated by stand age and structure — and not a
-# scaling artefact. Large errors mean the opposite and have to be resolved before anything is read
-# from the biomass layer.
+# Small relative errors mean the units and expansion factors are right. Large errors mean the
+# opposite and have to be resolved before anything is read from the biomass layer.
 #
 # Reads the curated RData only (light). Run in RStudio:
 #   source(here::here("pipeline","07n_verify_biomass.R"))
@@ -84,5 +81,5 @@ out <- data.table(check = c("ba=vol*wd*bef_med", "ca=ba*cf_med", "bio_ha=sumBaEF
                             pass))
 fwrite(out, file.path(vdir, "verify_biomass_summary.csv"), bom = TRUE)
 
-cat("\n==== verify_biomass:", if (pass) "PASS ✅ (units/EF consistent → weak biomass R² is GENUINE)"
-    else "FAIL ❌ (relative error > 1% → investigate units/EF; biomass weakness may be artifactual)", "====\n")
+cat("\n==== verify_biomass:", if (pass) "PASS (units/EF consistent)"
+    else "FAIL (relative error > 1%: investigate units/EF)", "====\n")

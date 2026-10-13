@@ -215,8 +215,7 @@ def species_maps():
     The lookup carries the plot's FIELD-measured dominant species (well over a hundred distinct names),
     not the raster classes, so it cannot be joined to the species table as shipped. The trained legend
     is the authoritative code<->name map; any species outside its named classes is what the raster calls
-    class 36 (기타 / Other). The field name is KEPT, since collapsing it would discard exactly the detail
-    that makes the plot-index family worth having, and the code is added alongside it.
+    class 36 (기타 / Other). The field name is kept, and the code is added alongside it.
     """
     legend = read_csv(os.path.join(OUT, LEGEND_USED))
     code_of = {r['species']: r['code'] for r in legend}
@@ -441,7 +440,7 @@ def stage_manifest(dry):
 
 
 def raster_format(paths):
-    """The Format line of the README, read from the files instead of asserted."""
+    """The Format line of the README, read from the files."""
     blocks, comps = set(), set()
     for p in paths:
         with rasterio.open(p) as ds:
@@ -452,7 +451,7 @@ def raster_format(paths):
 
 # ---------------------------------------------------------------------------------------------
 def numbers():
-    """The accuracy figures the README quotes, read from the validation tables, never typed.
+    """The accuracy figures the README quotes, read from the validation tables.
     Keys match the ⟨…⟩ placeholders in the template; a placeholder with no key here stays and blocks a real run."""
     def pick(rows, val, **kw):
         hit = [r for r in rows if all(str(r.get(k)) == str(v) for k, v in kw.items())]
@@ -491,7 +490,7 @@ decode each raster with the lookup of its own record.
 ## Looking at the maps without downloading them
 
 The maps are published as a public Earth Engine image collection, with a browser viewer over it, so
-they can be examined before or instead of downloading several gigabytes. The viewer shows these maps.
+they can be examined without downloading several gigabytes. The viewer shows these maps.
 
 | | |
 |---|---|

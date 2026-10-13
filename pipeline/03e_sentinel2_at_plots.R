@@ -3,8 +3,8 @@
 # Stage 05 predicts onto the Sentinel-2 raster that 03a exported and 03b aligned. The models are
 # trained on the same raster: this samples its 42 bands at the plot coordinates of rd_points.csv and
 # writes the plot feature table that stages 05 and 07 read. Training and prediction therefore see
-# one set of numbers by construction — the value at a plot is the value of the cell it falls in, not
-# a second composite sampled some other way — and nothing here touches Earth Engine.
+# one set of numbers: the value at a plot is the value of the cell it falls in. Nothing here touches
+# Earth Engine.
 #
 # The bands are read from 03c's single-band files, the fast path, or from 03b's merged file when 03c
 # has not been run. Either way they are labelled in the raster's physical band order, which

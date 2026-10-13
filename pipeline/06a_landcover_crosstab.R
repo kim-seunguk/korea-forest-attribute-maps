@@ -21,7 +21,8 @@ source(here("R", "paths.R"))
 
 L1_TIF  <- here("data", "interim", "landcover_mcee_30m", "landcover_L1_30m.tif")
 CONIF   <- here("outputs", "nfi8", "m8_maps_30m", "ftm_conifer_fraction_30m.tif")   # forest extent + signal
-BIO     <- here("outputs", "nfi8", "m8_maps_30m", "ftm_biomass_30m.tif")      # loss discriminator
+# 06b filters on the land-cover class alone; the biomass map is tabulated here for the summary only.
+BIO     <- here("outputs", "nfi8", "m8_maps_30m", "ftm_biomass_30m.tif")      # mean biomass per class
 OUT_CSV <- here("outputs", "nfi8", "m8_landcover_crosstab.csv")
 for (f in c(L1_TIF, CONIF, BIO)) require_file(f)
 

@@ -28,8 +28,8 @@
 #      direct-against-imputation table (the six-set m4a_ladder.csv is read when neither exists)
 # Out: outputs/nfi8/m4c_dualtrack.csv · outputs/nfi8/m4c_pred_points.csv
 #
-# Heavy. Runs the full pass, which is what the reported numbers come from. For a quick shakedown
-# on fewer trees and fewer bootstrap resamples, set PILOT first; a pilot writes *_PILOT files.
+# Heavy. Runs the full pass. For a quick shakedown on fewer trees and fewer bootstrap resamples,
+# set PILOT first; a pilot writes *_PILOT files.
 #   source(here::here("pipeline", "07b_compare_families.R"))
 #   PILOT <- TRUE; source(here::here("pipeline", "07b_compare_families.R"))
 # ================================================================================================
@@ -63,9 +63,9 @@ cat(sprintf("merged %d plots | train=%d test=%d\n", nrow(DT), sum(DT$role=="trai
 
 # ---- 2. predictor sets + target typing (identical to 07a) ----------------------------------
 preds_clim <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE","T_SLO","sin_y","cos_x","C_PAR","Lon","Lat")
-s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))   # sort() = REPRODUCIBILITY GUARD, not cosmetic: the yaImpute
-# k=1 randomForest match samples mtry columns in a seed-driven order, so the SAME predictors in a
-# different COLUMN ORDER fit a different forest and change a large share of the matched plots.
+s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))   # sort() pins the column order: the yaImpute
+# k=1 randomForest match samples mtry columns in a seed-driven order, so the same predictors in a
+# different column order fit a different forest.
 # s2_med's order otherwise inherits the input CSV's column order, which is regenerated per machine
 # and not guaranteed identical between machines, so the scores would drift with it. Must match
 # pipeline/05b_plot_index_imputation.R, or the validation and the deposited product would order predictors
@@ -73,7 +73,7 @@ s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))   # sort() = REPRODUCIBILITY
 vstar  <- intersect(V_PREDICTORS, names(DT))            # map predictors; stand age is not among them
 has_fror <- "FROR" %in% names(DT)
 DT[, V_VG := factor(as.character(V_VG))]; for (v in c("V_DC","V_DN")) if (v %in% names(DT)) DT[[v]] <- as.numeric(DT[[v]])
-# matching axis = FIELD structure {FT, DC, DN} (Riley-faithful; identical typing to pipeline/05b_plot_index_imputation.R)
+# matching axis = FIELD structure {FT, DC, DN} (identical typing to pipeline/05b_plot_index_imputation.R)
 DT[, fld_V_VG := factor(as.character(fld_V_VG))]; for (v in c("fld_V_DC","fld_V_DN")) if (v %in% names(DT)) DT[[v]] <- as.numeric(DT[[v]])
 # yaImpute matches on the NUMERIC ordinals above; the SCORING below reads them as classes, so keep a
 # character copy rather than re-coercing DT (which would change the matching axis).
@@ -95,10 +95,8 @@ cat(sprintf("predictor sets: clim_s2med=%d vars | full=%d vars (s2_med=%d vstar=
 # MATCH = yaImpute matching axis (field structure); TARGETS = the SCORED set read off the matched plot.
 MATCH <- c("fld_V_VG","fld_V_DC","fld_V_DN")                       # field FT + diameter/density classes (== 05b)
 REG   <- c("coniferfrac_full","shannon_full","Bio_a_ha")          # regression passengers (read-off, not matched)
-# All three matching variables are scored, not forest type alone. The matching runs on {FT, DC, DN},
-# so scoring only FT would leave two thirds of the axis unvalidated, and diameter class is what
-# carries stand size to a user. DC and DN are ordinal codes, scored as exact classes, which is the
-# strict reading; the value-tier band is left NA for them.
+# All three matching variables are scored. DC and DN are ordinal codes, scored as exact classes; the
+# value-tier band is left NA for them.
 CLS   <- c("fld_V_VG","fld_V_DC","fld_V_DN","domsp_full","domsp_raw")   # classification scored: the full matching axis + dom species
 TARGETS <- c(REG, CLS)                                            # scored targets
 TOL <- c(coniferfrac_full = 0.1, shannon_full = 0.25)             # value-tier band (NA -> skip)
@@ -206,8 +204,8 @@ for (tn in names(TIERS)) for (sc in c("spatial","random","test")) {
   # class at the held-out plot, for each of the three matching variables and for crown density at the 50 %
   # cut. Answers "does the plot-index imputation beat simply reading the class off the map?" Emitted once
   # (set-independent) under predset="FTM"; compare its point accuracy to the imputed field row of the same
-  # target. It is a check, not a like-for-like contest: the map is a second observation of the same
-  # place, and the full set receives the map's classes as predictors.
+  # target. The map is a second observation of the same place, and the full set receives the map's
+  # classes as predictors.
   if (tn == "full" && "V_VG" %in% names(DT) && sc %in% c("spatial","test")) {
     for (v in c("VG", "DC", "DN")) {
       fv <- paste0("fld_V_", v); rv <- paste0("V_", v)

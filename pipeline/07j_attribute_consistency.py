@@ -1,17 +1,12 @@
 """07j_attribute_consistency.py — measure the multivariate consistency the plot-index product offers.
 
 The plot-index family is described as preserving the realistic co-occurrence of species, sizes and
-ages, while every per-attribute accuracy reported for it is worse than the direct family's. That
-trade-off is usually asserted rather than measured, here and in the source literature. Riley et al.
-(2022) note that coherence between separately imputed attributes is not guaranteed and could produce
-pixel combinations that are unlikely or impossible, and call the comparison between the two
-approaches a next step rather than a result. Having both families over the same country on the
-same grid makes the measurement possible. Three of them, each covering one half of the trade-off:
+ages, while every per-attribute accuracy reported for it is worse than the direct family's. Three
+measures, each covering one half of the trade-off:
 
   (1) VARIANCE RETENTION   Var(map)/Var(plots) per continuous attribute.
       A direct regression maps the conditional mean, so it must under-disperse; a k = 1 transfer copies
-      a real value, so it should sit near 1. This measures the "retaining more variability on the
-      landscape" claim that motivates k = 1 (Riley et al. 2016).
+      a real value, so it should sit near 1.
 
   (2) PLAUSIBILITY DISTANCE (bin-free)   For each map cell, the distance in standardized attribute
       space to the nearest REAL plot of the same dominant species. The plot-index map is 0 by
@@ -20,20 +15,15 @@ same grid makes the measurement possible. Three of them, each covering one half 
       the same species naturally sit (each plot's nearest neighbour among its own species). A direct
       cell further from any real plot than real plots are from each other is an attribute combination
       the inventory never observed.
-      Bin-free on purpose: an "impossible combination" rate over binned attributes is dominated by bin
-      width and by the sparsity of 17,099 plots spread over a 4-way cross-tabulation, so it would
-      measure our binning rather than the maps.
 
   (3) MARGINAL + JOINT DISTRIBUTIONAL FIDELITY   Bhattacharyya coefficient between the map and the
       plot population, for the dominant-species marginal (Riley's V4 class-proportion comparison) and
       for the joint dominant-species x composition x biomass x diversity table. The NFI is a systematic
-      probability sample, so its distribution is the reference — the same inferential move Riley makes.
+      probability sample, so its distribution is the reference.
 
-Comparing an area-weighted map against a plot sample is only fair because the inventory grid is
-systematic. That assumption is what makes (3) meaningful, and it is the one to check first if the
-result looks wrong.
+(3) assumes the inventory grid is a systematic sample; check that first if the result looks wrong.
 
-Two things keep the comparison honest. The reference population is the plots the maps cover: the
+Two restrictions apply. The reference population is the plots the maps cover: the
 maps stop at the forest-type map's stocked extent, and the plots outside it are a different
 population from those inside, so they are left out before anything is compared. And both families
 are sampled at the same random cells, since they share one grid; a cell is kept only where both
@@ -187,7 +177,7 @@ for nm, d in (('plot_to_plot_baseline', d_base), ('direct', d_dir)):
         add('plausibility_distance_' + lab, nm, 'joint(coniferfrac,logBio,shannon)',
             float(np.percentile(dd, q)), 'standardized units; nearest real plot of the same species')
 add('plausibility_distance_median', 'imputation', 'joint(coniferfrac,logBio,shannon)', 0.0,
-    'EXACTLY zero by construction — every cell IS a real plot; reported for completeness, not as a result')
+    'zero by construction: every cell is a real plot')
 frac = float(np.mean(d_dir[np.isfinite(d_dir)] > np.nanpercentile(d_base, 90)))
 add('beyond_p90_of_plot_spacing', 'direct', 'joint(coniferfrac,logBio,shannon)', frac,
     'share of direct-map cells further from any real same-species plot than 90% of real plots are from each other')

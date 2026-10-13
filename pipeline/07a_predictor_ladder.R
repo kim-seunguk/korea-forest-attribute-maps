@@ -23,8 +23,8 @@
 #      SUF names the RUN, see the switches below: "" for the six-set ladder on the plots complete under
 #      every set, "_ftmonly" / "_baseonly" / "_rich" for a subset of sets on its own complete-case sample.
 #
-# Heavy. Runs the full pass, which is what the reported numbers come from. For a quick shakedown
-# on fewer trees and fewer bootstrap resamples, set PILOT first:
+# Heavy. Runs the full pass. For a quick shakedown on fewer trees and fewer bootstrap resamples,
+# set PILOT first:
 #   source(here::here("pipeline", "07a_predictor_ladder.R"))
 #   PILOT <- TRUE; source(here::here("pipeline", "07a_predictor_ladder.R"))
 #   FTM_ONLY <- TRUE; source(...)      # the delivered predictor set alone: the headline run
@@ -59,8 +59,7 @@ cat(sprintf("merged %d plots | train=%d test=%d | dropped dup rd cols: %s\n",
 
 # ---- 2. predictor sets + target typing -----------------------------------------------------
 # sin_y and cos_x are the sine and cosine of terrain ASPECT, not of a coordinate — the names are
-# historical. The no-coordinate rung drops them together with Lon and Lat all the same: that is the
-# set the published ladder was scored with, and it is kept so that the table reproduces.
+# historical. The no-coordinate rung drops them together with Lon and Lat.
 preds_clim    <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE","T_SLO","sin_y","cos_x","C_PAR","Lon","Lat")
 preds_nolonlat<- setdiff(preds_clim, c("Lon","Lat","sin_y","cos_x"))
 s2_all  <- grep("^s2_", names(DT), value = TRUE)          # every Sentinel-2 column the feature table carries
@@ -140,7 +139,7 @@ rows <- list()
 #   value  usefulness within a tolerance: within TOL of the truth, or in the top three classes.
 #   window aggregated to the 50 km block before comparing, which removes plot-to-cell mismatch and
 #          asks whether the map is right about the region even where it is wrong about the plot.
-# The paper reports point. The other two are diagnostics and are not comparable across targets.
+# point is the headline column. The other two are diagnostics and are not comparable across targets.
 # clu = the NFI cluster of each held-out plot: the bootstrap resamples clusters (R/eval_utils.R bci()).
 metric_row <- function(target, stratum, ps, scheme, o, p, in3, cell, is_class, tol, clu = NULL) {
   if (is_class) { pt <- mean(p == o); vl <- mean(in3); wn <- NA_real_; nr <- nir(o)
@@ -185,16 +184,14 @@ run_target <- function(tg, is_class) {
     metric_row(tg, stratum, ps, sc, DT[[tg]][d$pos], d$pred, d$in3, DT$block_id[d$pos], is_class, tol,
                clu = cluster_of(DT$Plot_ID[d$pos]))
   }
-  for (ps in FIG_PSETS) {                                            # spatial OOF per plot -> global accumulator (feeds the accuracy figure and 07o/07q)
+  for (ps in FIG_PSETS) {                                            # spatial OOF per plot -> global accumulator (read by 07o and 07q)
     d <- res[res$ps == ps & res$sc == "spatial", ]; if (!nrow(d)) next
     pred_pts[[length(pred_pts) + 1L]] <<- data.table(
       Plot_ID = DT$Plot_ID[d$pos], predset = ps, target = tg,
       obs = as.character(DT[[tg]][d$pos]), pred = as.character(d$pred))
   }
 }
-# --- per-plot spatial-CV OOF predictions for the direct-vs-imputation figure (mirrors 07b section 4b) ---
-# the predicted-against-observed panels must be the SAME run as the accuracy table, so emit 07a's own out-of-fold predictions here instead
-# of relying on the separate 07g uncertainty run (which gave slightly different R² -> figure/table mismatch).
+# --- per-plot spatial-CV out-of-fold predictions, read by 07o and 07q (mirrors 07b section 4b) ---
 FIG_PSETS <- intersect(c("clim_s2med", "full"), names(PSETS))
 pred_pts  <- list()
 allT <- c(REG, CLS)
@@ -208,7 +205,7 @@ stopCluster(cl)
 
 # ---- 5. write + headline summary -----------------------------------------------------------
 out <- rbindlist(rows); fwrite(out, file.path(outd, sprintf("m4a_ladder%s.csv", SUF)))
-if (length(pred_pts)) {                                              # per-plot OOF (route=direct) for fig05_accuracy.R, 07o and 07q
+if (length(pred_pts)) {                                              # per-plot OOF (route=direct) for 07o and 07q
   pp <- rbindlist(pred_pts)
   fwrite(pp, file.path(outd, sprintf("m4a_pred_points%s.csv", SUF)), bom = TRUE)
   cat(sprintf("wrote m4a_pred_points%s.csv (%d plot-predictions; route=direct, spatial-CV, predset in {%s})\n",

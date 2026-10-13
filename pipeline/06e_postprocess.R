@@ -1,8 +1,7 @@
 # 06e_postprocess.R — summary statistics and area totals for the finished maps.
 # ============================================================================================
 # Post-processes the wall-to-wall maps (outputs/nfi8/m8_maps_<RES>/): clip to the national boundary, per-layer
-# sanity stats, and area/stock totals with an NFI design-based AREA-AGREEMENT check (a 2nd, leakage-free QA beyond
-# the test-plot R²: does mapped conifer/forest area match the official NFI estimate?).
+# sanity stats, and area/stock totals with an area-agreement check against the NFI design-based estimate.
 # RES picks which map set to summarise. The delivered set is 30 m.
 #   RES <- "30m"; source(here::here("pipeline","06e_postprocess.R"))
 # ============================================================================================
@@ -44,8 +43,13 @@ if (!file.exists(BOUNDARY_SHP))
        "(ctp_rvn.shp + .shx/.dbf/.prj sidecars), or set BOUNDARY_SHP <- \"<path/to.shp>\" before sourcing.")
 korea <- vect(st_transform(st_union(st_make_valid(st_read(BOUNDARY_SHP, quiet=TRUE))), 5179))
 clip  <- function(tif) terra::mask(terra::crop(rast(file.path(mapdir, tif)), korea), korea)
-# One place builds a delivered map's name, so this stage and R/paths.R cannot drift apart.
-map_file <- function(tier, tgt) sprintf("%s_%s_%s.tif", unname(FILE_TIER[tier]), unname(FILE_VAR[tgt]), RES)
+# A delivered map's name, from FILE_TIER and FILE_VAR in R/paths.R. product_file() names the 30 m set
+# 05a writes; for any other map set under m8_maps_<RES>/ the resolution token is swapped for RES.
+map_file <- function(tier, tgt) {
+  f <- product_file(tier, tgt, "map")
+  if (RES != "30m") f <- sub("_30m[.]tif$", sprintf("_%s.tif", RES), f)
+  f
+}
 if (WRITE_CLIP) { clipdir <- here("outputs",VERSION,sprintf("m8_maps_%s_clip",RES)); dir.create(clipdir, showWarnings=FALSE) }
 
 # ---- per-layer sanity stats + area/stock totals --------------------------------------------

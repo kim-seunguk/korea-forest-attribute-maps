@@ -124,8 +124,8 @@ run_banner <- function(run, pilot, cfg, n = NA, extra = "") {
 
 # register_cluster(): a PSOCK cluster whose workers inherit the master's library paths. Each worker
 # is a fresh R session and starts with the default .libPaths(), so packages installed in a user
-# library or under renv are invisible to it and foreach fails to load. Passing the master's paths in
-# is what makes the parallel stages work; every one of them registers its cluster through here.
+# library or under renv are invisible to it and foreach fails to load. This passes the master's paths
+# in; every parallel stage registers its cluster through here.
 # NFIMAP_MAX_WORKERS in the environment caps the worker count below n_max, for a machine that is
 # shared with other work.
 register_cluster <- function(n_max = 16L) {

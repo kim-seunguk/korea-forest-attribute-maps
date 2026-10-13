@@ -3,7 +3,7 @@
 # For the direct-prediction model, on the frozen spatial folds, this attaches a per-prediction
 # uncertainty and then tests whether it is calibrated: does a higher predicted uncertainty actually
 # correspond to a larger error? A layer that fails this test can still rank locations, but it cannot
-# be read as an error bar, and the dataset says so.
+# be read as an error bar.
 #   - regression (3 continuous targets: conifer fraction, AG biomass, Shannon): spatial-OOF pred/obs + uncertainty
 #     = SD across RF trees (predict.all); calibration cor(SD, |error|) per target, binned by decile.
 #   - classification (dom species):  confidence = vote-probability margin (top1-top2); accuracy by margin decile.
@@ -64,7 +64,7 @@ tm$stage("cluster"); cl <- register_cluster(16L)
 # ---- regression: spatial-OOF pred/obs + per-tree SD, for every continuous target --------------
 # The three continuous targets shown as predicted against observed in the figure, all on the same
 # predictor set so they share identical predictors. The reliability curves are computed for each of
-# them, because the weak ones are where a trustworthy uncertainty layer matters most.
+# them.
 tm$stage("reg")
 reg_list <- list(); reg_cal_list <- list(); reg_cor <- setNames(numeric(0), character(0))
 for (RT in REG_TS) {

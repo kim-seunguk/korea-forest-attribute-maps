@@ -42,7 +42,7 @@ theme_fig <- function(base_size = 11) {
     )
 }
 
-# Journal-style panel tag, e.g. panel_tag("a", "Species top-1") -> "(a) Species top-1"
+# Panel tag, e.g. panel_tag("a", "Species top-1") -> "(a) Species top-1"
 panel_tag <- function(letter, title = NULL) {
   if (is.null(title)) sprintf("(%s)", letter) else sprintf("(%s) %s", letter, title)
 }
@@ -54,11 +54,10 @@ panel_tag <- function(letter, title = NULL) {
 # ---- 3. Save helper ------------------------------------------------------ #
 # Rendered figures land in figures/rendered/, at 600 dpi.
 #
-# Write the same figure as PNG *and* PDF. Journals prefer vector art, and these panels are text/line
-# work (points, tiles, labels) that stays sharp and small as PDF; only the raster MAP figures
-# (the maps) are composed in ArcGIS and exported from there. cairo_pdf, not the default pdf(),
-# so UTF-8 glyphs (×, ′, ⁻¹) and fonts embed correctly on Windows. `png_path` may be given with or
-# without the .png suffix; the PDF is written beside it.
+# Write the same figure as PNG *and* PDF. These panels are line work (points, tiles, labels) that
+# stays sharp and small as PDF; the map figures are composed in ArcGIS. cairo_pdf, not the default
+# pdf(), so UTF-8 glyphs (×, ′, ⁻¹) and fonts embed correctly on Windows. `png_path` may be given
+# with or without the .png suffix; the PDF is written beside it.
 save_png_pdf <- function(png_path, plot, width, height, dpi = 600) {
   png_path <- sub("\\.png$", "", png_path)
   for (ext in c(".png", ".pdf")) {

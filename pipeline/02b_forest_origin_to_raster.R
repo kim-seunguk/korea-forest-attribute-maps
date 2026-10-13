@@ -5,9 +5,8 @@
 # stand attributes. It serves both as a predictor in the FTM-added tier and as the stratum the
 # accuracy is broken down by in 07f.
 #
-# The 임종 (FROR_CD) codes are written through unchanged rather than collapsed to a binary:
-# 1 is planted, 2 is natural, and 0 is neither. Keeping all three lets a user decide what to do
-# with the third rather than inheriting a choice made here.
+# The 임종 (FROR_CD) codes are written through unchanged: 1 is planted, 2 is natural, and 0 is
+# neither.
 #
 # Out: data/interim/fmap_30m/<edition>/V_FROR.tif   (INT2S, EPSG:5179, 30 m)
 #

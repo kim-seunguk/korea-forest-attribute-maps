@@ -4,13 +4,11 @@
 # a different question, what a product rebuilt at the cluster's support would look like, because
 # rebuilding means retraining, and retraining changes three things at once, two of which hurt.
 #
-# What "cluster support" means here is set by the sampling design, not chosen. The inventory is a
-# cluster sample: a cluster holds up to four subplots about 50 m apart, so it occupies roughly a
-# 100 m footprint, and the 30 m cell is smaller than the measurement footprint the inventory
-# actually uses. Aggregating to the cluster is not a retreat to a coarser product; it is matching
-# the map's support to the sampling design. It also needs no new rasters: averaging the subplots'
-# predictor vectors is a spatial average of the predictors over the footprint, sampled at the
-# subplot positions inside it.
+# Cluster support follows the sampling design: the inventory is a cluster sample, a cluster holds up
+# to four subplots about 50 m apart, so it occupies roughly a 100 m footprint, and the 30 m cell is
+# smaller than the measurement footprint the inventory uses. It needs no new rasters: averaging the
+# subplots' predictor vectors is a spatial average of the predictors over the footprint, sampled at
+# the subplot positions inside it.
 #
 # Three configurations, not two. Comparing only "train and evaluate at the plot" against "train and
 # evaluate at the cluster" confounds two separate effects, so a third isolates them:
@@ -25,8 +23,8 @@
 #
 # ! Config 2 costs the imputation its defining property. Four subplots draw four different donors,
 #   so the cluster value is the mean of four real plots, behaviour equivalent to k = 4 rather than
-#   k = 1. The variance ratio is reported for exactly this reason: it is where that loss becomes
-#   visible. Config 3 preserves k = 1 by matching one donor per cluster, but pays for it in sample
+#   k = 1. The variance ratio shows that loss.
+#   Config 3 preserves k = 1 by matching one donor per cluster, but pays for it in sample
 #   size. Delivering at the cluster's support therefore forces a choice between the imputation's
 #   combination fidelity and its training sample, and this stage measures both sides of it.
 #
@@ -35,14 +33,12 @@
 #   - the sample falls from plots to clusters                                    -> R2 down
 #   ? the target's own variance falls, and R2 is measured against that variance -> up if the
 #     within-cluster variation was unpredictable noise, down if it was signal the map captured
-# The third cannot be reasoned out, which is why it is measured.
 #
 # ! Targets are recomputed from the pooled stem list at both supports, with the same code.
 #   Averaging plot-level summaries would be wrong for two of the four: conifer fraction is a
 #   basal-area-weighted ratio, so the mean of ratios is not the pooled ratio, and Shannon over
-#   pooled stems is strictly higher than the mean of subplot Shannons. Recomputing both levels here
-#   keeps the comparison free of definitional differences; the plot-level values are checked
-#   against m2_targets so the recomputation is verifiably the same quantity.
+#   pooled stems is strictly higher than the mean of subplot Shannons. The plot-level values are
+#   checked against m2_targets (the GATE line below).
 #
 # Both routes are run at every configuration on the frozen 50 km folds. Subplots of one cluster
 # share a block and a fold by construction (04a assigns them by cluster); any cluster that still

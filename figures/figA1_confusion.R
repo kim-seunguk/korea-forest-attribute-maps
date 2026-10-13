@@ -3,7 +3,7 @@
 # Reads the 07d confusion matrix (observed x predicted counts) and draws a row-normalized heatmap
 # (each row = an observed species, cells = fraction predicted as each class), species labelled with
 # scientific names and ordered by observed abundance.
-# This figure is not in the paper; it is kept as an optional view of what 07d writes.
+# An optional view of what 07d writes.
 #   source(here::here("figures","figA1_confusion.R"))                      # the delivered set, spatial folds
 #   SCHEME <- "test"; source(here::here("figures","figA1_confusion.R"))    # the disjoint test set instead
 # ============================================================================================
@@ -19,7 +19,6 @@ if (!exists("SCHEME")) SCHEME <- "spatial"   # spatial | test
 #   "_wholeftm"   = every plot with a complete record under the delivered set (07d with FTM_ONLY)
 #   "_wholebase"  = every plot with a complete record under the no-map set (07d with BASE_ONLY)
 #   ""            = the common subset of plots complete under both sets (07d with neither switch)
-# "whole", not "full", so the suffix cannot be read as a predictor set.
 if (!exists("SUF"))    SUF    <- "_wholeftm"
 outd <- here("outputs", VERSION)
 

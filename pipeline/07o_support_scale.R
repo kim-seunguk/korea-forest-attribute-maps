@@ -28,25 +28,20 @@ SEED <- 7214L
 # Two ranges are measured together, and they mean different things.
 #   Cluster range, 0.1-2 km. The inventory samples in clusters, and the median nearest-neighbour
 #     distance between plots is 50 m (measured and printed in step 1b below). A 100-250 m unit
-#     therefore holds two to four subplots of the SAME cluster. Averaging them does not build a
-#     regional mean; it removes reference noise — positioning error, plot-to-cell misregistration,
-#     and the sampling variance of a 0.04 ha plot. This range shows how much of the plot-level error
-#     belongs to the reference data instead of the map.
+#     therefore holds two to four subplots of the SAME cluster. Averaging them removes reference
+#     noise — positioning error, plot-to-cell misregistration, and the sampling variance of a 0.04 ha
+#     plot. This range shows how much of the plot-level error belongs to the reference data.
 #     Bell et al. (2023, PNW-GTR-1018) state for gradient nearest-neighbour maps that "accuracy
 #     assessments are not appropriate at scales finer than the 0.81-ha or 9-pixel footprint", and
-#     0.81 ha is 90 m x 90 m. That statement supports the reading above: assessment finer than the
-#     footprint measures noise. It is not a claim that the map improves at 100 m — with min_plots = 1,
-#     counting every plot as its own unit, there is no step at 100 m at all.
+#     0.81 ha is 90 m x 90 m. With min_plots = 1 there is no step at 100 m.
 #   Regional range, 5-100 km. The change-of-support curve proper, where units are genuine regional
 #     means.
 SUPPORTS  <- c(0, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 50, 100)   # km; 0 = plot level, no aggregation
-# MIN_PLOTS is a set rather than a scalar. The cluster range holds two to four plots per unit by
+# MIN_PLOTS is a set. The cluster range holds two to four plots per unit by
 # design, so demanding five empties it; the regional range can let a sparse unit carry the value. All
-# values are computed and min_plots is left as an output column, so whichever rule is quoted, the
-# evidence for the others is in the same file.
+# values are computed, with min_plots as an output column.
 #   1 counts every plot as its own unit, which holds the sample fixed at every support. This is the
-#     series to quote for what a user can expect: it conditions on nothing the user does not have.
-#     Reference noise makes it a lower bound rather than an inflated one.
+#     headline series.
 #   2 is the smallest value for which an average exists.
 #   4 is a "complete cluster" sensitivity. Five or more is unusable in the cluster range, because a
 #     cluster holds four subplots and a unit would have to catch two clusters.
@@ -54,17 +49,15 @@ MIN_PLOTS_SET <- c(1L, 2L, 4L)
 MIN_PLOTS <- 2L                              # aggregate_to default
 NPERM     <- 200L                            # permutation control repeats
 
-# ---- reportability: let the bootstrap interval decide, not a hand-picked threshold ---------------
+# ---- reportability: bootstrap interval width ----------------------------------------------------
 # Rule: do not report a support whose 95% bootstrap CI is wider than CI_WIDTH_MAX.
-# Basis: the smallest effect this curve is used to claim is the gain in biomass from plot level to
-#   the regional range. An interval wider than that gain cannot resolve the effect it is meant to
-#   show, and 0.15 is the round number just above it. One condition then cuts both pathologies: the
-#   coarse end, where 100 km leaves a handful of units, and an over-strict guard in the cluster range.
-# ! Borderline cases are not hidden: ci_width is always written out, so a reader can re-cut at a
-#   different threshold.
+# Basis: 0.15 is just above the gain in biomass R² from plot level to the regional range; a wider
+#   interval cannot resolve that gain. One condition then cuts both pathologies: the coarse end,
+#   where 100 km leaves a handful of units, and an over-strict guard in the cluster range.
+# ! ci_width is always written out, so the threshold can be changed after the run.
 CI_WIDTH_MAX <- 0.15
 NBOOT     <- 1000L
-TARGETS   <- c("coniferfrac_full", "shannon_full", "Bio_a_ha")   # continuous only; a mean of classes is meaningless
+TARGETS   <- c("coniferfrac_full", "shannon_full", "Bio_a_ha")   # continuous only
 PSETS     <- c("clim_s2med", "full")                             # without / with the forest-type map
 # FTM_ONLY: the delivered set on its own complete-case sample, read from 07a's FTM_ONLY run
 # (*_ftmonly) and written to *_ftm. The default run reads the six-set ladder, whose common subset
@@ -87,10 +80,9 @@ DT <- DT[is.finite(obs) & is.finite(pred) & is.finite(UTMK_X) & is.finite(UTMK_Y
 cat(sprintf("loaded %d plot-predictions | targets=%s | predsets=%s\n",
             nrow(DT), paste(TARGETS, collapse = ","), paste(PSETS, collapse = ",")))
 
-# ---- 1b. sample layout: why the cluster range exists ---------------------------------------------
-# The choice of aggregation levels is set by the sampling design, not by preference. Measuring the
-# nearest-neighbour distance leaves the cluster structure in the output: if these numbers change, the
-# cluster range in SUPPORTS has to be reconsidered.
+# ---- 1b. sample layout ---------------------------------------------------------------------------
+# Measuring the nearest-neighbour distance leaves the cluster structure in the output: if these
+# numbers change, the cluster range in SUPPORTS has to be reconsidered.
 tm$stage("spacing")
 XY <- unique(DT[, .(Plot_ID, UTMK_X, UTMK_Y)])
 CELLM <- 2000
@@ -130,12 +122,11 @@ for (ps in PSETS) for (tg in TARGETS) {
   for (L in SUPPORTS) for (mp in MIN_PLOTS_SET) {
     # The plot level is independent of min_plots, and the row is emitted for every series so that a
     # reader filtering on min_plots still has the ladder's anchor. The values are identical by
-    # construction; it costs three rows.
+    # construction.
     a <- aggregate_to(d, L, mp)
     if (nrow(a) < 3L) next
-    # The interval width decides the admissible flag, and a rule that decides what gets reported has
-    # to be reproducible: bci() fixes its own seed and restores the RNG state afterwards, and the
-    # permutation control below is seeded here.
+    # bci() fixes its own seed and restores the RNG state, and the permutation control below is
+    # seeded here, so the admissible flag is reproducible.
     ci <- bci(a$o, a$p, r2, NBOOT)
     # Control: shuffle the predictions nationally, then run the same aggregation. This is the null
     # distribution of the R2 that aggregation alone produces.
@@ -206,13 +197,12 @@ for (ps in PSETS) {
     d <- FIG[predset == ps & target == tg][order(support_km)]
     if (!nrow(d)) next
     xx <- xs[SUPPORTS %in% d$support_km]
-    # Bootstrap intervals. They have to be visible, or the coarse end reads as a peak instead of noise.
+    # Bootstrap intervals.
     segments(xx, d$ci_lo, xx, d$ci_hi, col = cols[[tg]], lwd = 1)
     segments(xx * 0.94, d$ci_lo, xx * 1.06, d$ci_lo, col = cols[[tg]], lwd = 1)
     segments(xx * 0.94, d$ci_hi, xx * 1.06, d$ci_hi, col = cols[[tg]], lwd = 1)
-    # Solid line and filled points only where the value is reportable. Beyond that the curve is kept
-    # as a faint dotted line with open points: nothing is hidden, and "do not quote this" is legible
-    # from the figure itself.
+    # Solid line and filled points only where the value is reportable. Beyond that the curve is drawn
+    # as a faint dotted line with open points.
     ok <- d$admissible == 1L
     lines(xx, d$r2, col = paste0(cols[[tg]], "55"), lwd = 1.5, lty = 3)
     if (any(ok)) lines(xx[ok], d$r2[ok], col = cols[[tg]], lwd = 2)

@@ -6,7 +6,6 @@
 #
 # The unit is the 표본점 (subplot), not the 집락 (cluster). Each 표본점 is classified independently
 # in the field, and the four 표본점 of a cluster sit 50 m apart, further than one 30 m cell.
-# Aggregating to the cluster would blend distinct stands and inflate the mixed-forest class.
 #
 # The plot coordinate comes from the plot register, except where the stand table, which records the
 # position a second time, disagrees with it; the coordinate step below says how that is decided.
@@ -148,8 +147,8 @@ build_ref <- function(cyc) {
 
   ref <- Reduce(function(a, b) merge(a, b, by = "Plot_ID", all.x = TRUE), list(ge, st, vg, dom, sl))
   # Forested plots that the tree records place in a forest-type group. V_VG is NA only where a plot
-  # contributed no canopy tree, which is what makes this the binding condition. It selects the
-  # 17,099-plot analysis set, so changing it changes every number that follows.
+  # contributed no canopy tree. It selects the 17,099-plot analysis set, so changing it changes
+  # every number that follows.
   ref <- ref[F_or_NonF == 1 & !is.na(V_VG)]
   list(ref = ref, unmatched = unmatched, fix = fix)
 }

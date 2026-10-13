@@ -1,20 +1,16 @@
-"""07l_map_summaries.py — the summary statistics of the delivered products quoted in the paper.
+"""07l_map_summaries.py — summary statistics of the delivered products.
 
-This is released rather than kept as a scratch check because the manuscript quotes exact values from
-these summaries: elevation-band means, dominant-species shares by elevation band, uncertainty by
-class of predicted value, and how the plot-index map uses its reference library. Those are derived
-analyses with choices in them, namely the 200 m band edges, the value-class widths and the treatment
-of nodata, so a reader has to be able to reproduce them. The manuscript states the method in one
-sentence and points here for the rest.
+Elevation-band means, dominant-species shares by elevation band, uncertainty by class of predicted
+value, and how the plot-index map uses its reference library. The 200 m band edges, the value-class
+widths and the treatment of nodata are set here.
 
-All summaries are of the delivered rasters rather than of any intermediate. Every layer sits on the
+All summaries are of the delivered rasters. Every layer sits on the
 covariate grid with 256 x 256 tiles, so the pass reads one tile stripe at a time. Reading single rows
 instead would decode each stripe once per row. Each layer is read through its declared nodata, so a
 class map's nodata code and a float layer's NaN are both treated as absent.
 
 ⚠ These are descriptions of the mapped products. Elevation is itself a predictor, so an elevation
-gradient in the maps is not independent evidence about forests. The manuscript says so where it
-quotes them.
+gradient in the maps is not independent evidence about forests.
 
 INPUT   outputs/nfi8/m8_maps_30m/ftm_{conifer_fraction,biomass,shannon,dominant_species}_30m.tif
         outputs/nfi8/m8_uncertainty_30m/ftm_{conifer_fraction_sd,biomass_sd,shannon_sd,dominant_species_uncertainty}_30m.tif

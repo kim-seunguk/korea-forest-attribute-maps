@@ -69,7 +69,7 @@ STAGING = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_staging_v2')
 MANIFESTS = os.path.join(ROOT, 'outputs', 'nfi8', '_ee_manifests_v2')
 
 COLLECTION = 'korea-forest-attributes-v2'
-TIERS = ('ftm',)                    # the predictor set the deposit carries; version 2 file names carry no token
+TIERS = ('ftm',)                    # the predictor set the deposit carries; the deposit's file names carry no token
 TABLE = 'plot_ids_v2'               # the plot-id table, read by the viewer
 
 # The four attributes, as they are named in the delivered files and as they are carried in the
@@ -360,12 +360,12 @@ def make_public():
 
     Only the collection takes an ACL. An image inside a collection cannot hold one of its own --
     asking for its policy is rejected outright -- because it inherits the collection's. So one call
-    covers every image, and the count below is what proves it did.
+    covers every image.
     """
     import ee
     ee.Initialize(credentials=credentials(), project=PROJECT)
     coll = 'projects/%s/assets/%s' % (PROJECT, COLLECTION)
-    for asset in [coll] + ['projects/%s/assets/%s' % (PROJECT, TABLE % t) for t in TIERS]:
+    for asset in [coll, 'projects/%s/assets/%s' % (PROJECT, TABLE)]:
         try:
             acl = ee.data.getAssetAcl(asset)
         except Exception as e:

@@ -33,15 +33,11 @@ FTM_VINTAGE <- "2025"
 
 # The stand attributes, and the two different roles they play.
 #
-# V_PREDICTORS are the three the models read from the forest-type map. Stand age is deliberately
-# absent: it is largely implied by diameter class, and including it would add a variable the map
-# supplies less reliably than the field does.
+# V_PREDICTORS are the three the models read from the forest-type map. Stand age is not among them.
 #
 # V_STAND_ATTRIBUTES are the three the plot-index route carries out of the matched plot and into the
-# delivered lookup table. They are the same three, because the matching axis is what that product
-# can speak to. Stand age is not delivered: the field class is coarse and is not one of the
-# attributes this dataset stands behind. A user who needs age can derive it from the plot record
-# that nfi_plot_id resolves to.
+# delivered lookup table. They are the same three. Stand age is not delivered. A user who needs age
+# can derive it from the plot record that nfi_plot_id resolves to.
 V_PREDICTORS       <- c("V_VG", "V_DC", "V_DN")
 V_STAND_ATTRIBUTES <- V_PREDICTORS
 
@@ -66,8 +62,7 @@ S2_BAND_NAMES <- as.vector(t(outer(
 # ---- product file naming ----------------------------------------------------------------------
 # Rasters are written under the names the dataset is published with.
 #
-# FILE_VAR translates because the two sides name things differently: the analysis keys a target by
-# its inventory column, which cannot be renamed, while the file needs a name a reader can read.
+# FILE_VAR maps the inventory column that keys a target in the analysis to its file name:
 # `Bio_a_ha` is the column, `biomass` is the file.
 #
 # The products are built from one predictor set — the run parameter `full` — and published under
@@ -87,8 +82,7 @@ product_file <- function(tier, var, kind = "map") {
          stop("unknown kind: ", kind, call. = FALSE))
 }
 
-# The plot-index family takes the same token as an explicit suffix, so that a filename never has to
-# be read as "the one without a suffix".
+# The plot-index family takes the same token as an explicit suffix.
 tier_suffix <- function(tier) {
   t <- unname(FILE_TIER[tier])
   if (is.na(t)) stop("unknown tier: ", tier, call. = FALSE)

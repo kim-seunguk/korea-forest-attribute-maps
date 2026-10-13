@@ -11,15 +11,13 @@
 #   nothing. The metrics are therefore reported twice: over all held-out plots, and over only those
 #   matched to a different plot. The second is the one that measures anything.
 #
-# This is supplementary. The reported accuracy of the plot-index family is the model-level figure
-# from 07b, measured on held-out plots under spatial-block cross-validation. What this adds is the
-# delivered raster's own behaviour, which is not the same measurement: the raster matches on
-# predictors resampled to 30 m at the cell rather than on the plot's own extracted feature vector,
-# and it draws on a library containing every plot rather than a training fold.
+# 07b gives the model-level accuracy under spatial-block cross-validation. This measures the
+# delivered raster, which matches on predictors resampled to 30 m at the cell and draws on a library
+# containing every plot; 07b matches on the plot's own extracted feature vector and draws on a
+# training fold.
 #
 # For biomass and diversity the R2 is negative by construction: copying a single neighbour's value
-# roughly doubles the variance of the estimate. That is the cost of returning a set of attributes
-# that occurred together on one real plot.
+# roughly doubles the variance of the estimate.
 #
 #   source(here::here("pipeline", "07c_imputation_validation.R"))
 # ================================================================================================
@@ -116,7 +114,7 @@ if (file.exists(m4c_f)) {
                by="target", all.x=TRUE)
   cat(sprintf("\n----- delivered raster, self-matches excluded  vs  07b plot-vector (scheme=test, predset=%s) -----\n", .m4c_pred))
   print(cmp[order(match(target, c("coniferfrac","domsp","Bio_a_ha","shannon")))], row.names=FALSE)
-  cat("(raster ~ 07b expected; small drop from 30 m predictor rasterisation is normal.)\n")
+  cat("(expect the raster close to, or slightly below, 07b)\n")
 } else cat("\n(m4c_dualtrack.csv not found — run 07b for the side-by-side; raster metrics above still stand.)\n")
 
 cat(sprintf("\nwrote:\n  %s/imputation_map_validation%s.csv   (metrics)\n  %s/imputation_test_pred%s.csv        (per-plot)\n",

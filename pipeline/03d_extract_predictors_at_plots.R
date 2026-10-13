@@ -5,11 +5,10 @@
 #
 # Predictors are taken from the RASTER at the plot, not from the plot's own field record — the
 # forest-type attributes included. Training and prediction therefore see the same source of
-# information. Reading the field record instead would train the model on something the map cannot
-# supply at prediction time.
+# information.
 #
 # The plot's own field classification is kept alongside, prefixed fld_, because the imputation
-# matches on it and because comparing fld_ against the raster value is itself a reported result.
+# matches on it and 07b compares it against the raster value.
 #
 # The forest-type map carries five stand attributes; the three in R/paths.R's V_PREDICTORS are the
 # ones read here. The map's own stand age and stand height are not: no model uses either, and

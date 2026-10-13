@@ -55,8 +55,7 @@ NTREE <- 500L; KNN <- 1L; SEED <- 7214L
 #   Beside the index the run writes index/nearest_reference_distance_ftm.tif: the random-forest distance
 #   between a cell and the plot it matched, one minus the proportion of trees in which the two share
 #   a terminal node, so a higher value means a less similar match. yaImpute returns it as $neiDstTrgs.
-#   It is a distance, not a proximity, and it is not an area-of-applicability layer — no convex-hull
-#   or threshold test is run, so neither of those names applies. See the dataset documentation.
+#   No convex-hull or threshold test is run on it.
 TIER <- "full"
 log_time <- function(m) { cat(sprintf("[%s] %s\n", format(Sys.time(), "%H:%M:%S"), m)); flush.console() }  # flush: a long non-yielding run otherwise buffers its output and silence looks like a hang
 log_time("=== plot-index imputation ===")
@@ -97,7 +96,7 @@ stopifnot(length(s2_med) == 42, all(PRED %in% names(DT)), all(TARGETS %in% names
 DT[, V_VG := factor(as.character(V_VG))]                        # forest-type map predictors
 DT[, FROR := factor(as.character(FROR))]
 for (v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])      # map DC/DN
-# y = field structure: FT (~15) as factor + DC/DN numeric. No domsp lumping — domsp is a passenger now, not a target.
+# y = field structure: FT (~15) as factor + DC/DN numeric. domsp is a passenger, not a target.
 DT[, fld_V_VG := factor(as.character(fld_V_VG))]
 for (v in c("fld_V_DC","fld_V_DN")) DT[[v]] <- as.numeric(DT[[v]])
 
@@ -164,8 +163,7 @@ for (f in c(covar_f, s2_f)) require_file(f)
 covar_r <- raster::stack(unname(covar_f)); names(covar_r) <- preds_clim
 # Label the stack by the file's physical band order, which is what R/paths.R's S2_BAND_NAMES holds,
 # and not by s2_med's order. s2_med is sorted alphabetically above; assigning that order here would
-# mislabel every physical band and scramble the S2 predictors, which collapsed the imputation once.
-# It was a real bug.
+# mislabel every physical band and scramble the S2 predictors.
 s2_r <- raster::stack(s2_f); stopifnot(raster::nlayers(s2_r) == 42L)
 names(s2_r) <- S2_BAND_NAMES
 stopifnot(setequal(names(s2_r), s2_med))                              # same 42 semantic bands; TD[[PRED]] reselects by name
@@ -178,9 +176,8 @@ for (f in c(vstar_f, fror_f)) require_file(f)
 # cropping the 56 large covariate and Sentinel-2 layers down. Cropping rewrites every one of those
 # layers through per-block temporary files; extending four layers writes through GDAL once. The
 # added north and edge cells get NA for the map attributes and are dropped by complete.cases in the
-# worker, which is correct — the product is bounded by the map, and there is nothing to impute
-# where the map does not reach. Extending to the covariate extent also puts the index on the same
-# grid as the direct maps, so the two families align cell for cell.
+# worker, since the product is bounded by the map. Extending to the covariate extent also puts the
+# index on the same grid as the direct maps, so the two families align cell for cell.
 e  <- raster::extent(covar_r); ce <- terra::ext(e[1], e[2], e[3], e[4])
 vg_ext <- file.path(tempdir(), sprintf("vstar_ext_%s.tif", FTM_VINTAGE))
 fr_ext <- file.path(tempdir(), sprintf("fror_ext_%s.tif",  FTM_VINTAGE))

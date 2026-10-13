@@ -34,7 +34,7 @@ source(here::here("R", "paths.R"))
 ## This extended grid is the product grid: 02f and 03a export onto it, and every raster the pipeline
 ## writes shares it. The delivered products cover the forest-type map's stocked forest (03a masks the
 ## Sentinel-2 composite to it), so cells north of the map hold covariates but no prediction. Far
-## offshore islands stay NA: the climate grids have no data there, and a wider extent cannot invent it.
+## offshore islands stay NA: the climate grids have no data there.
 v_ref <- here("data", "interim", "fmap_30m", FTM_VINTAGE, "V_VG.tif")   # the edition set in R/paths.R
 if (!file.exists(v_ref)) stop("Run 02a first — missing ", v_ref)
 COVAR_NORTH_LAT <- 38.80                                           # north of both the map and the climate grids
@@ -115,9 +115,7 @@ if (all(vapply(t_names, have, logical(1)))) {
 } else {
   log_t("=== terrain (SRTM on the product grid) ===")
   # 02f samples the native SRTM bilinearly, once, straight onto this grid, so nothing is reprojected
-  # here: slope and aspect are derived from the elevation exactly as exported. A DEM resampled onto a
-  # geographic grid and projected afterwards would carry duplicated rows and columns into slope and
-  # aspect as stripes.
+  # here: slope and aspect are derived from the elevation exactly as exported.
   dem_dir <- here("data", "raw", "dem_srtm_grid")
   tiles   <- list.files(dem_dir, pattern = "^srtm_elev_grid30m.*[.]tif$", full.names = TRUE)
   if (!length(tiles)) stop("Stage the grid-aligned SRTM first (02f_srtm_to_grid.py; see STAGING header): ", dem_dir)

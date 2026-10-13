@@ -41,7 +41,7 @@ preds_clim <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE
 s2_med <- intersect(names(DT), S2_BAND_NAMES)                      # the 42 declared bands (R/paths.R)
 if (sum(complete.cases(DT[, ..s2_med])) < 10000L)                  # guard: stale/mid-copy inputs -> abort loudly, not silent small-n
   stop("merged S2 completeness < 10k — inputs look stale/mid-update; Restart R + re-read files.", call. = FALSE)
-vstar  <- intersect(V_PREDICTORS, names(DT))   # stand age is not among them; this tier equals the delivered FTM-added product
+vstar  <- intersect(V_PREDICTORS, names(DT))   # R/paths.R's three map stand attributes; no stand age
 DT[, V_VG := factor(as.character(V_VG))]; for(v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])
 if ("FROR" %in% names(DT)) DT[, FROR := factor(as.character(FROR))]
 TIERS <- list(none    = c(preds_clim, s2_med),

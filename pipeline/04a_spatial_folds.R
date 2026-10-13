@@ -15,7 +15,7 @@
 # Inputs : data/interim/nfi8/rd_points.csv  (Plot_ID, UTMK_X/Y, Bio_a_ha, BAPH, dom_ba_share)
 # Outputs: outputs/nfi8/cv_folds.csv         (Plot_ID, block_id, role{test,train}, fold_spatial, fold_random, block_km)
 #          outputs/nfi8/variogram_range.csv  (target, range_km, sill) + chosen block_km
-#          outputs/nfi8/variogram_range.png  (justification plot)
+#          outputs/nfi8/variogram_range.png  (variogram plot)
 #   source(here::here("pipeline","04a_spatial_folds.R"))
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table) })
@@ -75,7 +75,7 @@ vg_tab <- rbind(vg_tab,
                 data.frame(target = "CHOSEN_block_km",     range_raw_km = BLOCK_KM, range_detrended_km = NA, sill = NA))
 fwrite(vg_tab, file.path(outd, "variogram_range.csv"))
 
-# justification plot (RAW semivariogram curves + chosen block size)
+# variogram plot (raw semivariogram curves + chosen block size)
 try({
   vgc <- do.call(rbind, vg_curves)
   png(file.path(outd, "variogram_range.png"), width = 1400, height = 1000, res = 180)

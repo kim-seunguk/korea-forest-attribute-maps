@@ -9,9 +9,9 @@
 #   100 시가화·건조(built) / 200 농업(agri) / 300 산림(forest) / 400 초지(grass) /
 #   500 습지(wetland)     / 600 나지(barren) / 700 수역(water)
 # It is pixel-aligned to the delivered maps, so 06a_landcover_crosstab.R can tabulate our forest
-# against the MCEE class, and 06b then prunes the confident errors (built or water on a low-biomass
-# cell) while keeping the cells where a disagreement is more likely to be real tree cover, such as
-# an orchard mapped as agriculture. All seven classes are kept rather than built alone, so that the
+# against the MCEE class, and 06b then prunes the cells whose land-cover class alone marks them as
+# errors (built, water) while keeping the cells where a disagreement is more likely to be real tree
+# cover, such as an orchard mapped as agriculture. All seven classes are kept, so that the
 # other direction — MCEE forest that we excluded — stays visible too.
 #
 # SOURCE (staged under data/raw/, or reached by a junction or symlink so it is not copied):

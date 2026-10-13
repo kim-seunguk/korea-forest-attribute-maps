@@ -16,10 +16,10 @@
 # ---- 1. block size from the spatial-autocorrelation range ----------------------------------
 # The block must be at least the autocorrelation range the model can exploit. The predictor set
 # includes the plot coordinates and smoothly varying climate, so the model can interpolate spatially,
-# and the leakage-relevant quantity is the raw response autocorrelation range. That is the default
-# and the conservative choice. detrend = TRUE removes the 2-D spatial trend first and reports the
-# intrinsic residual range, which is smaller and appropriate only for a model given no coordinates;
-# it is kept as context, not to choose the block. Range read off a sampled empirical (semi)variogram.
+# and the leakage-relevant quantity is the raw response autocorrelation range. That is the default.
+# detrend = TRUE removes the 2-D spatial trend first and reports the intrinsic residual range, which
+# is smaller and appropriate only for a model given no coordinates; it is kept as context, not to
+# choose the block. Range read off a sampled empirical (semi)variogram.
 estimate_block_size <- function(x, y, values, detrend = FALSE, n_sample = 3000L, n_bins = 40L,
                                 max_dist_frac = 0.5, sill_frac = 0.95, seed = 7214L) {
   ok <- is.finite(values) & is.finite(x) & is.finite(y)

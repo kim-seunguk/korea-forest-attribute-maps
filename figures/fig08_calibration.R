@@ -1,9 +1,9 @@
 # fig08_calibration.R — reliability curves for the four uncertainty layers.
 # ============================================================================================
 # One 2x2 reliability figure from outputs/nfi8/m7_calibration_ftm.csv (07g with FTM_ONLY):
-#   (a) coniferous fraction · (b) aboveground biomass · (c) Shannon diversity
+#   (a) coniferous fraction · (c) aboveground biomass · (d) Shannon diversity
 #       -> predicted ensemble SD vs mean absolute error (monotonic increase = reliable uncertainty)
-#   (d) dominant species -> vote margin vs observed accuracy
+#   (b) dominant species -> vote margin vs observed accuracy
 # Higher predicted uncertainty should mean higher observed error, monotonically across deciles; the
 # relation is strong for coniferous fraction and dominant species and weaker for biomass and
 # diversity. The uncertainty maps themselves are composed in GIS software from m8_uncertainty_30m/.
@@ -21,7 +21,7 @@ small_theme <- theme_fig(12) +
   theme(plot.title=element_text(face="bold", size=12, hjust=0, margin=margin(b=6)),
         plot.margin=margin(8,10,4,8))
 
-# ---- (a-c) continuous targets: predicted SD vs mean absolute error (1:1 = perfectly calibrated) ---
+# ---- (a, c, d) continuous targets: predicted SD vs mean absolute error (1:1 = perfectly calibrated) ---
 cont_panel <- function(RT, tag) {
   d <- cal[metric=="tree_sd" & target==RT]
   ggplot(d, aes(mean_uncert, mean_abs_err)) +
@@ -33,7 +33,7 @@ cont_panel <- function(RT, tag) {
          x="Predicted ensemble SD (decile mean)", y="Mean absolute error") +
     small_theme
 }
-# ---- (d) dominant species: vote margin vs observed accuracy ------------------------------------
+# ---- (b) dominant species: vote margin vs observed accuracy ------------------------------------
 cm <- cal[metric=="vote_margin"]
 p_d <- ggplot(cm, aes(mean_uncert, accuracy)) +
   geom_line(colour="#B2182B", linewidth=0.8) +

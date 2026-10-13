@@ -17,8 +17,6 @@
 #          under both sets; "_wholeftm" when FTM_ONLY is TRUE, every plot with a complete record under
 #          the delivered set, which is what the published per-class table is built from (07k);
 #          "_wholebase" when BASE_ONLY is TRUE, every plot complete under the no-map set.
-#          "whole", not "full": the predset token in these filenames is already base|full, so a
-#          "_basefull" suffix would read as a predictor set rather than as a sample.
 # ============================================================================================
 suppressPackageStartupMessages({ library(here); library(data.table); library(randomForest); library(foreach); library(doParallel) })
 source(here::here("R","paths.R")); source(here::here("R","eval_utils.R")); source(here::here("R","run_utils.R"))
