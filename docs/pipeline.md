@@ -173,7 +173,7 @@ Cloud project in `EE_PROJECT` and a staging bucket in `GCS_BUCKET`. It builds it
 manifests from `data_records.csv`, so the grid, dtype and nodata come from the rasters themselves,
 and it derives the plot-index family's four attributes from the deposited index and lookup so that
 every published layer is reproducible from the archive alone. It publishes into a collection of its
-own, so the version 1 collection stays as it is. `app/` holds the viewer over it.
+own. `app/` holds the viewer over it.
 
 Run the integrity check before trusting or publishing any raster. A GDAL statistics write has
 overrun the tile index of a full-resolution image while leaving the overviews intact, which means a

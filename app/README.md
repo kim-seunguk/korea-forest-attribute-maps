@@ -9,9 +9,6 @@ that the maps can be looked at without downloading them.
 | collection | `projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2` |
 | plot ids | `projects/ee-korea-forest-maps/assets/plot_ids_v2` |
 
-These are the version 2 assets. The version 1 collection, `korea-forest-attributes`, and its plot-id
-tables `plot_ids_base` and `plot_ids_ftm` stay online unchanged; nothing in this directory reads them.
-
 | file | what it is |
 |---|---|
 | `layers.json` | the band each published raster carries, and the display range of each band |
@@ -19,9 +16,7 @@ tables `plot_ids_base` and `plot_ids_ftm` stay online unchanged; nothing in this
 
 `pipeline/08e_publish_earthengine.py` is what creates the collection.
 
-`layers.json` is regenerated from the staged version 2 rasters when the collection is republished;
-until then it still lists the version 1 layers, including the `base_*` ones that version 2 does not
-carry. The generated block at the top of `viewer.js` is built from it and from
+`layers.json` is regenerated from the staged rasters when the collection is published. The generated block at the top of `viewer.js` is built from it and from
 `data/species_colors.csv`, and is replaced at the same time.
 
 ## What is published

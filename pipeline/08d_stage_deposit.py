@@ -1,10 +1,8 @@
 """08d_stage_deposit.py — assemble version 2 of the data deposit as a frozen, verified copy.
 
-Version 2 replaces every file of version 1 (10.5281/zenodo.21701424): one predictor set, 37
-dominant-species classes, corrected plot positions, rebuilt inputs and validation by inventory
-cluster. The staged folder is uploaded as a new version of the same record, so the version DOI the
+The staged folder is uploaded as a new version of the dataset's record, so the version DOI the
 repository reserves for that draft is passed in through NFIMAP_DEPOSIT_DOI and written into the
-README; version 1 stays available under its own DOI.
+README.
 
 WHY a separate staged tree rather than uploading from outputs/nfi8/ directly: rasters of this dataset
 have been corrupted by a GDAL PAM statistics write overrunning the IFD0 tile index, on files a GIS had

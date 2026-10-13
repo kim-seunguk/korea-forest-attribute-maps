@@ -3,12 +3,11 @@
 Code behind the nationwide 30 m dataset of four forest attributes for South Korea, and the analyses
 reported in the accompanying data descriptor.
 
-**Data** version 2 <https://doi.org/10.5281/zenodo.23313068> (version 1 <https://doi.org/10.5281/zenodo.21701424>; concept
-<https://doi.org/10.5281/zenodo.21701423>, which resolves to the newest version) (CC BY 4.0) ·
+**Data** version 2 <https://doi.org/10.5281/zenodo.23313068> (concept <https://doi.org/10.5281/zenodo.21701423>, which
+resolves to the newest version) (CC BY 4.0) ·
 **Code** MIT (this repository)
 
-This repository is the code of **version 2** of the dataset: one predictor set, 37 dominant-species
-classes, corrected plot positions, rebuilt inputs and validation by inventory cluster.
+This repository is the code of **version 2** of the dataset.
 
 **Viewer** <https://ee-korea-forest-maps.projects.earthengine.app/view/korea-forest-maps> — the maps in a browser, two at a time under a wipe.
 
@@ -89,10 +88,7 @@ corrupted file here passed a 164-block sample.
 
 Kim, S., Shin, J. H., Han, H., and Choe, H.: Nationwide 30 m maps of forest composition, biomass, and
 diversity in South Korea (2021–2025) from direct prediction and plot-index imputation, version 2
-[Data set], Zenodo, https://doi.org/10.5281/zenodo.23313068 (version 1: https://doi.org/10.5281/zenodo.21701424; concept:
-https://doi.org/10.5281/zenodo.21701423), 2026.
-
-Version 1 of the dataset stays available under its own DOI; its code is the `v1.0` tag of this repository.
+[Data set], Zenodo, https://doi.org/10.5281/zenodo.23313068 (concept: https://doi.org/10.5281/zenodo.21701423), 2026.
 
 ## Acknowledgments
 

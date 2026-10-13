@@ -26,7 +26,7 @@ dominant-species classes, and blocks, folds and bootstrap intervals assigned by 
 | `m7_coverage_ftm.csv` | coverage of the 50, 80 and 95 % intervals built from the ensemble SD, overall and by biomass third | `07h_uncertainty_coverage.py` |
 | `m8_temporal_sensitivity_ftm.csv` | direct-map accuracy by the plot's survey year | `07i_temporal_sensitivity.py` |
 | `m9_consistency_ftm.csv` | variance ratios, attribute-space plausibility distances and Bhattacharyya overlap of both families against the plot population | `07j_attribute_consistency.py` |
-| `dominant_species_table_ftm.csv` | the 37 trained classes: code, version 1 code, names, reference-plot count and prevalence, and producer's and user's accuracy and F1 under spatial-block cross-validation. The table deposited beside the maps | `07k_species_reliability.py` |
+| `dominant_species_table_ftm.csv` | the 37 trained classes: code, earlier code (`code_v1`), names, reference-plot count and prevalence, and producer's and user's accuracy and F1 under spatial-block cross-validation. The table deposited beside the maps | `07k_species_reliability.py` |
 | `m8_map_summary_plotuse_ftm.csv` | how the plot-index map uses the reference library: mapped cells, plots assigned, cells and hectares per plot | `07l_map_summaries.py` |
 | `m11_support_scale_ftm.csv` | accuracy against aggregation support, from the cell to 100 km, with a permutation control and a minimum number of plots per unit | `07o_support_scale.R` |
 | `m22_cluster_support_ftm.csv` | both families at the support of the plot and at the support of the inventory cluster | `07p_cluster_support.R` |
