@@ -45,16 +45,16 @@ var MOBILE_MAP_LANDSCAPE_RATIO = 0.68;
 // >>> generated
 var VIS = {
   "biomass": {
-    "max": 271.1477,
-    "min": 57.5174,
-    "n_sampled": 20179485,
+    "max": 273.3392,
+    "min": 60.9964,
+    "n_sampled": 9588394,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "Mg ha-1"
   },
   "biomass_sd": {
-    "max": 79.5396,
-    "min": 50.6319,
-    "n_sampled": 10098024,
+    "max": 82.0048,
+    "min": 51.2767,
+    "n_sampled": 4794197,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "ensemble SD, Mg ha-1"
   },
@@ -65,9 +65,9 @@ var VIS = {
     "unit": "fraction of basal area"
   },
   "conifer_fraction_sd": {
-    "max": 0.3337,
-    "min": 0.0907,
-    "n_sampled": 10098024,
+    "max": 0.2903,
+    "min": 0.0756,
+    "n_sampled": 4794197,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "ensemble SD, fraction of basal area"
   },
@@ -78,28 +78,28 @@ var VIS = {
     "unit": "1 - vote margin"
   },
   "nearest_reference_distance": {
-    "max": 0.9257,
-    "min": 0.7289,
-    "n_sampled": 10098024,
+    "max": 0.9217,
+    "min": 0.6867,
+    "n_sampled": 4794197,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "1 - terminal-node proximity"
   },
   "shannon": {
-    "max": 1.7675,
-    "min": 0.3088,
-    "n_sampled": 20196048,
+    "max": 1.8211,
+    "min": 0.3376,
+    "n_sampled": 9588394,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "Shannon H\u2032"
   },
   "shannon_sd": {
-    "max": 0.5375,
-    "min": 0.3384,
-    "n_sampled": 10098024,
+    "max": 0.5523,
+    "min": 0.3351,
+    "n_sampled": 4794197,
     "range_from": "p5-p95 pooled over every layer carrying this band",
     "unit": "ensemble SD, Shannon H\u2032"
   }
 };
-var SPECIES = ["E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "C9A227", "FF73DF", "78C679", "E1E1E1", "E1E1E1", "E1E1E1", "FA9FB5", "267300", "E1E1E1", "E1E1E1", "6A51A3", "E1E1E1", "E1E1E1", "E1E1E1", "08519C", "E1E1E1", "41B6C4", "9ECAE1", "E1E1E1", "E1E1E1", "1B9E77", "FEC44F", "E1E1E1", "E1E1E1", "A63603", "FDAE6B", "F16913", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1"];
+var SPECIES = ["E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "C9A227", "FF73DF", "78C679", "E1E1E1", "E1E1E1", "FA9FB5", "267300", "E1E1E1", "E1E1E1", "6A51A3", "E1E1E1", "E1E1E1", "08519C", "E1E1E1", "41B6C4", "9ECAE1", "E1E1E1", "E1E1E1", "1B9E77", "FEC44F", "E1E1E1", "E1E1E1", "A63603", "FDAE6B", "F16913", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1"];
 var SPECIES_MAJOR = [{"code": 4, "hex": "C9A227", "label": "Carpinus laxiflora"}, {"code": 5, "hex": "FF73DF", "label": "Carpinus tschonoskii"}, {"code": 6, "hex": "78C679", "label": "Castanea crenata"}, {"code": 9, "hex": "FA9FB5", "label": "Cornus controversa"}, {"code": 10, "hex": "267300", "label": "Cryptomeria japonica"}, {"code": 13, "hex": "6A51A3", "label": "Larix kaempferi"}, {"code": 16, "hex": "08519C", "label": "Pinus densiflora"}, {"code": 18, "hex": "41B6C4", "label": "Pinus rigida"}, {"code": 19, "hex": "9ECAE1", "label": "Pinus thunbergii"}, {"code": 22, "hex": "1B9E77", "label": "Prunus serrulata var. pubescens"}, {"code": 23, "hex": "FEC44F", "label": "Quercus acutissima"}, {"code": 26, "hex": "A63603", "label": "Quercus mongolica"}, {"code": 27, "hex": "FDAE6B", "label": "Quercus serrata"}, {"code": 28, "hex": "F16913", "label": "Quercus variabilis"}];
 var SPECIES_NAME = ["Acer pictum var. mono", "Alnus firma", "Betula pendula", "Betula schmidtii", "Carpinus laxiflora", "Carpinus tschonoskii", "Castanea crenata", "Celtis sinensis", "Chamaecyparis obtusa", "Cornus controversa", "Cryptomeria japonica", "Fraxinus chinensis var. rhynchophylla", "Juglans mandshurica", "Larix kaempferi", "Liriodendron tulipifera", "Morus indica", "Pinus densiflora", "Pinus koraiensis", "Pinus rigida", "Pinus thunbergii", "Platycarya strobilacea", "Populus × tomentiglandulosa", "Prunus serrulata var. pubescens", "Quercus acutissima", "Quercus aliena", "Quercus dentata", "Quercus mongolica", "Quercus serrata", "Quercus variabilis", "Robinia pseudoacacia", "Salix pierotii", "Styrax japonicus", "Tilia amurensis", "Tilia mandshurica", "Ulmus davidiana", "Zelkova serrata", "Other"];
 // <<< generated
