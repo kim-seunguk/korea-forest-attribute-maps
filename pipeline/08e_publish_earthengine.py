@@ -39,7 +39,7 @@ OUT  outputs/nfi8/_ee_staging_v2/*.tif      the derived plot-index attribute ras
      outputs/nfi8/_ee_manifests_v2/*.json   one ingestion manifest per image
 
 Version 2 of the dataset goes into a collection of its own, korea-forest-attributes-v2, with its own
-plot-id table, plot_ids_ftm_v2. Nothing here names the version 1 collection or its tables, so they
+plot-id table, plot_ids_v2. Nothing here names the version 1 collection or its tables, so they
 stay online as they are.
 
 RUN  python pipeline/08e_publish_earthengine.py            # derive and write the manifests only

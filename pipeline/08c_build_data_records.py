@@ -11,8 +11,8 @@ Pixel size and origin are written at full precision. The cell is 30.000454545 m 
 and the origin is 746150.0931818181; rounded to 30 and 746150.1, a grid rebuilt from this table sits
 8.45 m off at the eastern edge.
 
-The filenames in this table are the ones the pipeline writes, which are also the ones the dataset
-is published under; nothing is renamed downstream.
+The filenames in this table are the ones the pipeline writes; 08d renames them to the published
+names when it stages the deposit.
 
 OUTPUT outputs/nfi8/data_records.csv
 RUN    python pipeline/08c_build_data_records.py

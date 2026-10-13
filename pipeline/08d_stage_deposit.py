@@ -11,8 +11,8 @@ have been corrupted by a GDAL PAM statistics write overrunning the IFD0 tile ind
 opened. The deposit therefore gets its own directory that nothing else touches, and the integrity
 gate runs against that copy, not against the working tree.
 
-The pipeline writes the published raster names (naming is decided once, in R/paths.R). Only the tables
-whose working names carry the tier suffix are renamed on the way in.
+The pipeline writes names that carry the predictor-set token (naming is decided once, in R/paths.R);
+the rasters and the tables are renamed to the published names on the way in (RENAME below).
 
 SOURCES
     m8_maps_30m/ftm_<attribute>_30m.tif · m8_uncertainty_30m/ftm_*_{sd,uncertainty}_30m.tif

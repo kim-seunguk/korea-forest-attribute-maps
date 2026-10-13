@@ -25,8 +25,9 @@ Both paper figures read the delivered predictor set's tables: `fig05_accuracy.R`
 `m4c_pred_points.csv` from `07b_compare_families.R`; `fig08_calibration.R` needs
 `m7_calibration_ftm.csv` from the same 07g run.
 
-Output goes to `figures/rendered/`, which is not included here. The figures regenerate from the
-released data, so only the code is kept.
+Output goes to `figures/rendered/`, which is not included here. `fig08_calibration.R` regenerates
+from `validation/m7_calibration_ftm.csv`; `fig05_accuracy.R` needs the two per-plot tables, which are
+not distributed.
 
 ## Conventions
 
