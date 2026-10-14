@@ -464,7 +464,7 @@ function isUncertainty(band) {
 function styled(family, band) {
   var img = ee.Image(assetId(family, band));
   if (band === 'dominant_species') {
-    return {image: img.visualize({min: 0, max: 38, palette: SPECIES}), kind: 'species'};
+    return {image: img.visualize({min: 0, max: SPECIES.length - 1, palette: SPECIES}), kind: 'species'};
   }
   if (band === 'plot_index') {
     // The index carries no order, so it is coloured by its remainder mod 11, which shows where the
