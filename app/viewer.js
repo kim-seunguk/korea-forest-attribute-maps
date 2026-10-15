@@ -99,8 +99,8 @@ var VIS = {
     "unit": "ensemble SD, Shannon H\u2032"
   }
 };
-var SPECIES = ["E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "C9A227", "FF73DF", "78C679", "E1E1E1", "E1E1E1", "FA9FB5", "267300", "E1E1E1", "E1E1E1", "6A51A3", "E1E1E1", "E1E1E1", "08519C", "E1E1E1", "41B6C4", "9ECAE1", "E1E1E1", "E1E1E1", "1B9E77", "FEC44F", "E1E1E1", "E1E1E1", "A63603", "FDAE6B", "F16913", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1"];
-var SPECIES_MAJOR = [{"code": 4, "hex": "C9A227", "label": "Carpinus laxiflora"}, {"code": 5, "hex": "FF73DF", "label": "Carpinus tschonoskii"}, {"code": 6, "hex": "78C679", "label": "Castanea crenata"}, {"code": 9, "hex": "FA9FB5", "label": "Cornus controversa"}, {"code": 10, "hex": "267300", "label": "Cryptomeria japonica"}, {"code": 13, "hex": "6A51A3", "label": "Larix kaempferi"}, {"code": 16, "hex": "08519C", "label": "Pinus densiflora"}, {"code": 18, "hex": "41B6C4", "label": "Pinus rigida"}, {"code": 19, "hex": "9ECAE1", "label": "Pinus thunbergii"}, {"code": 22, "hex": "1B9E77", "label": "Prunus serrulata var. pubescens"}, {"code": 23, "hex": "FEC44F", "label": "Quercus acutissima"}, {"code": 26, "hex": "A63603", "label": "Quercus mongolica"}, {"code": 27, "hex": "FDAE6B", "label": "Quercus serrata"}, {"code": 28, "hex": "F16913", "label": "Quercus variabilis"}];
+var SPECIES = ["E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "C9A227", "FF73DF", "78C679", "E1E1E1", "E1E1E1", "FA9FB5", "267300", "E1E1E1", "E1E1E1", "6A51A3", "E1E1E1", "E1E1E1", "08519C", "E1E1E1", "41B6C4", "9ECAE1", "E1E1E1", "E1E1E1", "1B9E77", "FEC44F", "E1E1E1", "E1E1E1", "A63603", "FDAE6B", "F16913", "E7298A", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1", "E1E1E1"];
+var SPECIES_MAJOR = [{"code": 4, "hex": "C9A227", "label": "Carpinus laxiflora"}, {"code": 5, "hex": "FF73DF", "label": "Carpinus tschonoskii"}, {"code": 6, "hex": "78C679", "label": "Castanea crenata"}, {"code": 9, "hex": "FA9FB5", "label": "Cornus controversa"}, {"code": 10, "hex": "267300", "label": "Cryptomeria japonica"}, {"code": 13, "hex": "6A51A3", "label": "Larix kaempferi"}, {"code": 16, "hex": "08519C", "label": "Pinus densiflora"}, {"code": 18, "hex": "41B6C4", "label": "Pinus rigida"}, {"code": 19, "hex": "9ECAE1", "label": "Pinus thunbergii"}, {"code": 22, "hex": "1B9E77", "label": "Prunus serrulata var. pubescens"}, {"code": 23, "hex": "FEC44F", "label": "Quercus acutissima"}, {"code": 26, "hex": "A63603", "label": "Quercus mongolica"}, {"code": 27, "hex": "FDAE6B", "label": "Quercus serrata"}, {"code": 28, "hex": "F16913", "label": "Quercus variabilis"}, {"code": 29, "hex": "E7298A", "label": "Robinia pseudoacacia"}];
 var SPECIES_NAME = ["Acer pictum var. mono", "Alnus firma", "Betula pendula", "Betula schmidtii", "Carpinus laxiflora", "Carpinus tschonoskii", "Castanea crenata", "Celtis sinensis", "Chamaecyparis obtusa", "Cornus controversa", "Cryptomeria japonica", "Fraxinus chinensis var. rhynchophylla", "Juglans mandshurica", "Larix kaempferi", "Liriodendron tulipifera", "Morus indica", "Pinus densiflora", "Pinus koraiensis", "Pinus rigida", "Pinus thunbergii", "Platycarya strobilacea", "Populus × tomentiglandulosa", "Prunus serrulata var. pubescens", "Quercus acutissima", "Quercus aliena", "Quercus dentata", "Quercus mongolica", "Quercus serrata", "Quercus variabilis", "Robinia pseudoacacia", "Salix pierotii", "Styrax japonicus", "Tilia amurensis", "Tilia mandshurica", "Ulmus davidiana", "Zelkova serrata", "Other"];
 // <<< generated
 
@@ -162,7 +162,7 @@ var UI_TEXT = {
     'basemap.labels': 'Show labels',
     'location.button': 'Show my location',
     'location.layer': 'Current location',
-    'legend.species_others': 'Others (23 species, 5 % of area)',
+    'legend.species_others': 'Others (22 species, 3 % of area)',
     'legend.plot_index': 'colours repeat; they mark where the matched plot changes',
     'range.pooled_p5_p95': 'p5-p95 pooled over every layer carrying this band',
     'range.definitional': 'definitional',
@@ -248,7 +248,7 @@ var UI_TEXT = {
     'basemap.labels': '라벨 표시',
     'location.button': '현재 위치 보기',
     'location.layer': '현재 위치',
-    'legend.species_others': '기타 수종 (23종, 전체 면적의 5%)',
+    'legend.species_others': '기타 수종 (22종, 전체 면적의 3%)',
     'legend.plot_index': '색상은 할당된 표본점의 번호를 나타냅니다. 색상 표현에는 중복이 있습니다.',
     'range.pooled_p5_p95': '이 밴드를 포함하는 모든 레이어를 통합한 p5–p95',
     'range.definitional': '정의에 따른 범위',

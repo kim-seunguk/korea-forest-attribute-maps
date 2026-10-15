@@ -28,7 +28,7 @@ code,sci_name,major,hex,label
 21,Populus × tomentiglandulosa,False,#E1E1E1,Others
 24,Quercus aliena,False,#E1E1E1,Others
 25,Quercus dentata,False,#E1E1E1,Others
-29,Robinia pseudoacacia,False,#E1E1E1,Others
+29,Robinia pseudoacacia,True,#E7298A,Robinia pseudoacacia
 30,Salix pierotii,False,#E1E1E1,Others
 31,Styrax japonicus,False,#E1E1E1,Others
 32,Tilia amurensis,False,#E1E1E1,Others
