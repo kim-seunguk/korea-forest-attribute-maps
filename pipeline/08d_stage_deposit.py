@@ -535,8 +535,8 @@ and `shannon`, each paired with a per-cell relative uncertainty layer:
 **Tables**
 
 - `dominant_species_table.csv`: the {n_classes} class codes with the codes of the earlier record (`code_v1`), Korean and
-  scientific names, prevalence, and per-class producer's and user's accuracy and F1. Accuracy cells are empty for classes the
-  classifier never assigned: user's accuracy is undefined there, not zero.
+  scientific names, prevalence, and per-class producer's and user's accuracy and F1. User's accuracy is empty for the
+  classes the classifier never assigned, where it is undefined, and their producer's accuracy and F1 are 0.
 - `data_records.csv`: per-file schema for the {len(manifest)} rasters (data type, nodata, unit, valid
   range, grid).
 - `forest_type_codes.csv`: the forest-type codes of the lookup's `forest_type` column with their names.
