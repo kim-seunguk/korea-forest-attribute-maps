@@ -33,7 +33,7 @@ After the copy, every staged raster is decoded block by block, its band metadata
 staged index must hold only integers the lookup can decode.
 
 RUN   python pipeline/08d_stage_deposit.py --dry-run          (checks; writes nothing)
-      NFIMAP_DEPOSIT_DOI=10.5281/zenodo.<n> NFIMAP_VIEWER_URL=<url> python pipeline/08d_stage_deposit.py
+      NFIMAP_DEPOSIT_DOI=10.6084/m9.figshare.<n> NFIMAP_VIEWER_URL=<url> python pipeline/08d_stage_deposit.py
       The DOI is the version DOI the repository reserves for the new-version draft. The README
       template holds ⟨…⟩ placeholders for the viewer URL and for the numbers the validation stages
       produce; a real run refuses to stage until every one is filled in write_readme().
@@ -474,6 +474,7 @@ def numbers():
 def write_readme(manifest, n_plots, n_classes, fmt, n_files, dry):
     m0 = manifest[0]
     doi = DOI or '⟨version 2 DOI⟩'
+    repository = 'figshare' if doi.startswith('10.6084/') else 'Zenodo'
     lines = f"""# Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025)
 
 Kim, S., Shin, J. H., Han, H., and Choe, H. (2026).
@@ -635,7 +636,7 @@ evaluated against observed error.
 
 Kim, S., Shin, J. H., Han, H., and Choe, H.: Nationwide 30 m maps of forest composition, biomass, and
 diversity in South Korea (2021–2025) from direct prediction and plot-index imputation
-[Data set], Zenodo, https://doi.org/{doi}, 2026.
+[Data set], {repository}, https://doi.org/{doi}, 2026.
 
 ---
 

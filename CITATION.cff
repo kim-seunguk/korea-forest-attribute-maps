@@ -30,7 +30,7 @@ references:
   - type: data
     title: "Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025) from direct prediction and plot-index imputation"
     version: "2.0"
-    doi: "10.5281/zenodo.23313068"
+    doi: "10.6084/m9.figshare.34558446"
     year: 2026
     authors:
       - family-names: Kim

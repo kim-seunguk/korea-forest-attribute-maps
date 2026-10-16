@@ -3,8 +3,8 @@
 Code behind the nationwide 30 m dataset of four forest attributes for South Korea, and the analyses
 reported in the accompanying data descriptor.
 
-**Data** version 2 <https://doi.org/10.5281/zenodo.23313068> (concept <https://doi.org/10.5281/zenodo.21701423>, which
-resolves to the newest version) (CC BY 4.0) ·
+**Data** version 2 <https://doi.org/10.6084/m9.figshare.34558446> (figshare; version 1 remains at
+<https://doi.org/10.5281/zenodo.21701424>) (CC BY 4.0) ·
 **Code** MIT (this repository)
 
 This repository is the code of **version 2** of the dataset.
@@ -88,7 +88,7 @@ corrupted file here passed a 164-block sample.
 
 Kim, S., Shin, J. H., Han, H., and Choe, H.: Nationwide 30 m maps of forest composition, biomass, and
 diversity in South Korea (2021–2025) from direct prediction and plot-index imputation, version 2
-[Data set], Zenodo, https://doi.org/10.5281/zenodo.23313068 (concept: https://doi.org/10.5281/zenodo.21701423), 2026.
+[Data set], figshare, https://doi.org/10.6084/m9.figshare.34558446, 2026.
 
 ## Acknowledgments
 

@@ -344,7 +344,7 @@ function internalOption(display, values, ids) {
 var COLLECTION = 'projects/ee-korea-forest-maps/assets/korea-forest-attributes-v2';
 var PLOT_IDS = ee.FeatureCollection('projects/ee-korea-forest-maps/assets/plot_ids_v2');
 
-var DOI = 'https://doi.org/10.5281/zenodo.23313068';
+var DOI = 'https://doi.org/10.6084/m9.figshare.34558446';
 var CODE = 'https://github.com/kim-seunguk/korea-forest-attribute-maps';
 
 // ---- what can be shown ------------------------------------------------------------------------
