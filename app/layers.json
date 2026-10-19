@@ -1,0 +1,74 @@
+{
+  "bands": {
+    "biomass": {
+      "max": 273.3392,
+      "min": 60.9964,
+      "n_sampled": 9588394,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "biomass_sd": {
+      "max": 82.0048,
+      "min": 51.2767,
+      "n_sampled": 4794197,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "conifer_fraction": {
+      "max": 1.0,
+      "min": 0.0,
+      "range_from": "definitional"
+    },
+    "conifer_fraction_sd": {
+      "max": 0.2903,
+      "min": 0.0756,
+      "n_sampled": 4794197,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "dominant_species": {
+      "categorical": true,
+      "range_from": "legend, not a stretch"
+    },
+    "dominant_species_uncertainty": {
+      "max": 1.0,
+      "min": 0.0,
+      "range_from": "definitional"
+    },
+    "nearest_reference_distance": {
+      "max": 0.9217,
+      "min": 0.6867,
+      "n_sampled": 4794197,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "plot_index": {
+      "categorical": true,
+      "range_from": "legend, not a stretch"
+    },
+    "shannon": {
+      "max": 1.8211,
+      "min": 0.3376,
+      "n_sampled": 9588394,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    },
+    "shannon_sd": {
+      "max": 0.5523,
+      "min": 0.3351,
+      "n_sampled": 4794197,
+      "range_from": "p5-p95 pooled over every layer carrying this band"
+    }
+  },
+  "layers": {
+    "biomass_30m": "biomass",
+    "biomass_sd_30m": "biomass_sd",
+    "conifer_fraction_30m": "conifer_fraction",
+    "conifer_fraction_sd_30m": "conifer_fraction_sd",
+    "dominant_species_30m": "dominant_species",
+    "dominant_species_uncertainty_30m": "dominant_species_uncertainty",
+    "imputed_biomass_30m": "biomass",
+    "imputed_conifer_fraction_30m": "conifer_fraction",
+    "imputed_dominant_species_30m": "dominant_species",
+    "imputed_shannon_30m": "shannon",
+    "nearest_reference_distance_30m": "nearest_reference_distance",
+    "plot_index_30m": "plot_index",
+    "shannon_30m": "shannon",
+    "shannon_sd_30m": "shannon_sd"
+  }
+}

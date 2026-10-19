@@ -1,0 +1,27 @@
+# Inputs you supply and everything the pipeline writes.
+data/raw/
+data/interim/
+outputs/
+figures/rendered/
+
+# Inventory plot coordinates are confidential and must never be committed.
+*_coords.csv
+plot_coords.csv
+
+# Credentials
+.env
+.Renviron
+*_token
+
+# renv keeps the lockfile, not the library
+renv/library/
+renv/staging/
+
+# Language and OS cruft
+.Rproj.user/
+.Rhistory
+.RData
+__pycache__/
+*.pyc
+Thumbs.db
+.DS_Store

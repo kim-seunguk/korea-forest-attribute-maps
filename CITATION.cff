@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the dataset it produced."
+title: "Code for: Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025)"
+abstract: >-
+  R and Python pipeline that produces a nationwide 30 m dataset of four forest attributes for South
+  Korea from Korean National Forest Inventory plots, Sentinel-2, climate, terrain and the national
+  forest-type map, by direct random-forest prediction and by plot-index nearest-neighbor imputation.
+type: software
+version: "2.0"
+license: MIT
+repository-code: "https://github.com/kim-seunguk/korea-forest-attribute-maps"
+authors:
+  - family-names: Kim
+    given-names: Seunguk
+    affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0009-0008-4381-924X"
+  - family-names: Shin
+    given-names: Joong Hoon
+    affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0001-5318-1632"
+  - family-names: Han
+    given-names: Hee
+    affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0002-2588-7176"
+  - family-names: Choe
+    given-names: Hyeyeong
+    affiliation: "Seoul National University"
+    orcid: "https://orcid.org/0000-0003-2130-1622"
+references:
+  - type: data
+    title: "Nationwide 30 m maps of forest composition, biomass, and diversity in South Korea (2021–2025) from direct prediction and plot-index imputation"
+    version: "2.0"
+    doi: "10.6084/m9.figshare.34558446"
+    year: 2026
+    authors:
+      - family-names: Kim
+        given-names: Seunguk
+      - family-names: Shin
+        given-names: Joong Hoon
+      - family-names: Han
+        given-names: Hee
+      - family-names: Choe
+        given-names: Hyeyeong

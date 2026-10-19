@@ -1,0 +1,325 @@
+# 05b_plot_index_imputation.R — assign every forest cell one matched inventory plot.
+# ================================================================================================
+# The second product family. yaImpute with method = "randomForest" and k = 1 gives each cell the
+# index of the single most similar plot, so the attributes decoded from it in 05c are a combination
+# that was actually observed together in the field.
+#
+# What the matching runs on
+#   y = the plot's field forest structure: forest type, diameter class, density class
+#   x = 14 climate, terrain and position variables + 42 Sentinel-2 seasonal medians
+#       + the forest-type map attributes and stand origin (60 predictors, the same set as 05a)
+#
+# The four published attributes are not part of y. Stand age is not matched on.
+# It is available from the matched plot's record.
+#
+# The reference library
+#   The library is all plots with a complete record; accuracy is measured separately in 07b under
+#   spatial cross-validation and a disjoint test set.
+#
+#   ! Sampling this map at plot locations does not validate it. Every plot is a donor, and most
+#     cells containing a plot match it back to itself, so most of the comparison is a plot against
+#     its own record. 07c does sample it, and reports how often that happened alongside the
+#     metrics.
+#
+#   A donor must carry every attribute the index is decoded to. A plot whose trees have no volume
+#   upstream has no biomass or carbon, and every cell matched to it would decode to a blank, so
+#   such plots are left out of the library. They stay in the composition targets elsewhere.
+#
+# In : data/interim/covar_5179_s2/s2_bands/s2band_%02d.tif (03a -> 03b -> 03c), data/interim/nfi8/rd_points.csv,
+#      data/interim/nfi8/plot_features_s2.csv, data/interim/fmap_30m/<vintage>/{V_VG,V_DC,V_DN,V_FROR}.tif
+# Out: outputs/nfi8/index/imputation_ftm.tif + index/nearest_reference_distance_ftm.tif
+#      outputs/nfi8/models/train_reference_ftm.csv and the fitted yaImpute object
+#
+# Then: 05c decodes the index into attribute rasters, and 06b must be re-run because the
+#       land-cover filter is lost whenever these rasters are rewritten.
+#
+# Heavy — k = 1 over every forest cell in the country, processed in blocks. Run in RStudio:
+#   source(here::here("pipeline", "05b_plot_index_imputation.R"))
+# ============================================================================================
+suppressPackageStartupMessages({
+  library(here); library(data.table); library(raster); library(yaImpute); library(randomForest)
+  library(foreach); library(doSNOW)      # parallel over row-chunks (all cores); gower loaded on workers
+})
+source(here("R", "paths.R"))
+# NTREE is what yai() is handed, and it matches 07b. yaImpute divides it among the y variables
+# (ntree = max(50, floor(ntree / ncol(y)))), so the matching forest is three classification forests of
+# 166 trees, one per structure variable.
+NTREE <- 500L; KNN <- 1L; SEED <- 7214L
+
+# ---- the predictor set ----------------------------------------------------------------------
+#   PREDSET is the 60-predictor x set listed in the header, keyed "full" in R/paths.R (FILE_PREDSET)
+#   and in 07b.
+#
+#   Beside the index the run writes index/nearest_reference_distance_ftm.tif: the random-forest distance
+#   between a cell and the plot it matched, one minus the proportion of trees in which the two share
+#   a terminal node, so a higher value means a less similar match. yaImpute returns it as $neiDstTrgs.
+#   No convex-hull or threshold test is run on it.
+PREDSET <- "full"
+log_time <- function(m) { cat(sprintf("[%s] %s\n", format(Sys.time(), "%H:%M:%S"), m)); flush.console() }  # flush: a long non-yielding run otherwise buffers its output and silence looks like a hang
+log_time("=== plot-index imputation ===")
+
+outd    <- here("outputs", VERSION)
+mdl_dir <- file.path(outd, "models"); dir.create(mdl_dir, showWarnings = FALSE, recursive = TRUE)
+idx_dir <- file.path(outd, "index");  dir.create(idx_dir, showWarnings = FALSE, recursive = TRUE)
+psuf    <- predset_suffix(PREDSET)                                     # "_ftm"; see R/paths.R
+out_tif <- file.path(idx_dir, sprintf("imputation%s.tif", psuf))
+dst_tif <- file.path(idx_dir, sprintf("nearest_reference_distance%s.tif", psuf))
+
+# ===== 0. training data — IDENTICAL loading to pipeline/07b_compare_families.R ======================
+folds <- fread(file.path(outd, "cv_folds.csv"),  colClasses = list(character = "Plot_ID"))
+targets <- fread(file.path(outd, "targets.csv"), colClasses = list(character = "Plot_ID"))
+rd    <- fread(require_file(here("data", "interim", VERSION, "rd_points.csv")), encoding = "UTF-8",
+               colClasses = list(character = "Plot_ID"))
+feat  <- fread(require_file(here("data","interim",VERSION,"plot_features_s2.csv")), colClasses = list(character = "Plot_ID"))
+dup <- intersect(setdiff(names(targets), "Plot_ID"), names(rd)); if (length(dup)) rd <- rd[, setdiff(names(rd), dup), with = FALSE]
+DT <- Reduce(function(a, b) merge(a, b, by = "Plot_ID", all.x = TRUE),
+             list(folds[, .(Plot_ID, role, fold_spatial)], rd, targets, feat))
+
+# ---- predictor set ; y = FIELD structure {FT,DC,DN} (matched-on) --------------
+preds_clim <- c("C_PREC","C_TMAX","C_TMIN","C_RH","C_GSL","C_FD0","C_DTR","T_ELE","T_SLO","sin_y","cos_x","C_PAR","Lon","Lat")
+s2_med <- sort(intersect(names(DT), S2_BAND_NAMES))                       # the 42 declared bands (R/paths.R)
+# sort() PINS the predictor column order. yaImpute's k=1 randomForest samples mtry columns in a
+# seed-driven order, so the same predictors in a different order fit a different forest and change
+# a large share of the matched plots. Unsorted, the order would follow the input CSV, whose column
+# order can differ by machine, and the product would differ with it. 07b_compare_families.R sorts
+# identically, so the product and its validation agree.
+vstar  <- V_PREDICTORS                                                    # forest-type map predictors
+PRED   <- c(preds_clim, s2_med, vstar, "FROR")                           # 60 vars (07b 'full')
+# y = the field forest structure. fld_V_VG = field forest type (~15 groups) via EF-weighted IV
+# (01b), fld_V_DC/fld_V_DN = field diameter/crown-density classes. The published attributes are
+# copied into train_reference and are not part of y.
+TARGETS <- c("fld_V_VG","fld_V_DC","fld_V_DN")
+stopifnot(length(s2_med) == 42, all(PRED %in% names(DT)), all(TARGETS %in% names(DT)))
+
+DT[, V_VG := factor(as.character(V_VG))]                        # forest-type map predictors
+DT[, FROR := factor(as.character(FROR))]
+for (v in c("V_DC","V_DN")) DT[[v]] <- as.numeric(DT[[v]])      # map DC/DN
+DT[, fld_V_VG := factor(as.character(fld_V_VG))]
+for (v in c("fld_V_DC","fld_V_DN")) DT[[v]] <- as.numeric(DT[[v]])
+
+# reference library = all plots (train + test) complete in x and y, which yaImpute requires.
+trDT <- DT[role %in% c("train", "test")]
+ok   <- complete.cases(trDT[, c(PRED, TARGETS), with = FALSE])
+# A donor must carry every attribute the index is decoded to (see header): plots without biomass or
+# carbon leave the library here.
+nb <- sum(ok & !(is.finite(trDT$Bio_a_ha) & is.finite(trDT$Carbon_a_ha)))
+ok <- ok & is.finite(trDT$Bio_a_ha) & is.finite(trDT$Carbon_a_ha)
+log_time(sprintf("library: %d otherwise-complete plots without biomass/carbon left out", nb))
+tr   <- trDT[ok]
+log_time(sprintf("reference (ALL plots 100%%, complete) = %d plots | predictors = %d | targets = %d",
+                 nrow(tr), length(PRED), length(TARGETS)))
+
+X.df <- as.data.frame(tr[, PRED, with = FALSE])
+Y.df <- as.data.frame(tr[, TARGETS, with = FALSE]); Y.df$fld_V_VG <- droplevels(factor(Y.df$fld_V_VG))
+rownames(X.df) <- rownames(Y.df) <- as.character(seq_len(nrow(X.df)))   # plot_idx = 1..N = index raster values
+vg_levels   <- levels(X.df$V_VG)
+fror_levels <- levels(X.df$FROR)
+
+# ---- train_reference for 05c (plot_idx -> the matched plot's attributes) ----
+# The stamp holds the matched plot's field structure (the y) and its published attributes. The
+# columns keep the names V_VG/V_DC/V_DN, which 05c's decode expects, but hold the field fld_* values.
+ref <- tr[, .(plot_idx = seq_len(.N), Plot_ID,
+              V_VG = as.character(fld_V_VG), V_DC = fld_V_DC, V_DN = fld_V_DN,
+              dom_species = domsp_full, dom_ba_share = dom_ba_share_full,        # 04b domsp (basal-area based, pine races merged), as in the direct map and 07b
+              Bio_a_ha, Carbon_a_ha, BAPH,                                        # 04b EF-weighted structure
+              shannon_full, coniferfrac_full)]                                    # published attributes, validated in 07b and never matched on
+fwrite(ref, file.path(mdl_dir, sprintf("train_reference%s.csv", psuf)), bom = TRUE)
+log_time(sprintf("train_reference%s.csv saved (%d plots -> field FT/DC/DN + dom_species(04b) + biomass/carbon/BAPH + shannon/coniferfrac)", psuf, nrow(ref)))
+
+# STAMP_ONLY rewrites train_reference only, skipping training and the wall-to-wall pass. The index
+# raster depends on the matching axis and the predictors alone, and `tr` is rebuilt deterministically
+# from the same inputs, so plot_idx ordering is unchanged and the existing index raster
+# still aligns with the refreshed stamp.
+#   IMPUTE_STAMP_ONLY <- TRUE; source(...05b...)   then 05c
+if (isTRUE(get0("IMPUTE_STAMP_ONLY", ifnotfound = FALSE))) {
+  log_time("STAMP_ONLY=TRUE -> train_reference rewritten; reusing the existing index raster. Run 05c next.")
+} else {
+
+# ===== 1. train yaImpute (random-forest matching supervised by field structure {FT,DC,DN}; k = 1) =====
+set.seed(SEED + NTREE)
+opt_md <- yai(x = X.df, y = Y.df, method = "randomForest", k = KNN, ntree = NTREE)
+saveRDS(opt_md, file.path(mdl_dir, sprintf("yai_s2%s_ntree_%d.rds", psuf, NTREE)))
+log_time(sprintf("yaImpute trained (k=%d, ntree=%d, %d predictors)", KNN, NTREE, length(PRED)))
+
+# ===== 2. wall-to-wall predictor stack on the covar_5179 grid (all layers share this grid) ===
+covar_f <- setNames(file.path(here("data","interim","covar_5179"), paste0(preds_clim, ".tif")), preds_clim)
+# `raster` reads one band of the 42-band composite far more slowly than a single-band file, and a
+# terra SpatRaster cannot be sent to SOCK workers. 03c therefore splits the composite into single-band
+# files. The fallbacks below read the composite, which works but is far too slow for a full run.
+s2_band_dir <- here("data", "interim", "covar_5179_s2", "s2_bands")
+s2_f <- if (dir.exists(s2_band_dir)) file.path(s2_band_dir, sprintf("s2band_%02d.tif", seq_len(42))) else {
+          s2_f_tiled <- here("data", "interim", "covar_5179_s2", "s2med42_5179_tiled.tif")
+          if (file.exists(s2_f_tiled)) s2_f_tiled else here("data", "interim", "covar_5179_s2", "s2med42_5179.tif")
+        }
+for (f in c(covar_f, s2_f)) require_file(f)
+
+covar_r <- raster::stack(unname(covar_f)); names(covar_r) <- preds_clim
+# Label the stack by the file's physical band order (S2_BAND_NAMES in R/paths.R). s2_med is sorted,
+# so assigning its order here would mislabel every band.
+s2_r <- raster::stack(s2_f); stopifnot(raster::nlayers(s2_r) == 42L)
+names(s2_r) <- S2_BAND_NAMES
+stopifnot(setequal(names(s2_r), s2_med))                              # same 42 semantic bands; TD[[PRED]] reselects by name
+
+vg_dir  <- here("data", "interim", "fmap_30m", FTM_VINTAGE)
+vstar_f <- setNames(file.path(vg_dir, paste0(vstar, ".tif")), vstar)
+fror_f  <- file.path(vg_dir, "V_FROR.tif")                          # file V_FROR.tif -> layer renamed 'FROR'
+for (f in c(vstar_f, fror_f)) require_file(f)
+# Align the two grids by EXTENDING the four small map layers up to the covariate grid, not by
+# cropping the 56 large covariate and Sentinel-2 layers down. Cropping rewrites every one of those
+# layers through per-block temporary files; extending four layers writes through GDAL once. The
+# added north and edge cells get NA for the map attributes and are dropped by complete.cases in the
+# worker, since the product is bounded by the map. Extending to the covariate extent also puts the
+# index on the same grid as the direct maps, so the two families align cell for cell.
+e  <- raster::extent(covar_r); ce <- terra::ext(e[1], e[2], e[3], e[4])
+vg_ext <- file.path(tempdir(), sprintf("vstar_ext_%s.tif", FTM_VINTAGE))
+fr_ext <- file.path(tempdir(), sprintf("fror_ext_%s.tif",  FTM_VINTAGE))
+terra::extend(terra::rast(unname(vstar_f)), ce, filename = vg_ext, overwrite = TRUE)   # pad V_* (3 layers) with NA
+terra::extend(terra::rast(fror_f),          ce, filename = fr_ext, overwrite = TRUE)   # pad FROR (1 layer) with NA
+vstar_r <- raster::stack(vg_ext);  names(vstar_r) <- vstar
+fror_r  <- raster::raster(fr_ext); names(fror_r)  <- "FROR"
+TD <- raster::stack(covar_r, s2_r, vstar_r, fror_r)[[PRED]]         # 60 layers on the covar grid, in training-X order
+stopifnot(identical(names(TD), PRED))
+nr <- nrow(TD); nc <- ncol(TD)
+log_time(sprintf("TD stack ready (%d layers, %d x %d, covar_5179 grid)", raster::nlayers(TD), nr, nc))
+
+# ---- PRE-FLIGHT: verify the raster predictors ALIGN with the training features, before the run ----
+# Each of TD's 42 S2 bands is correlated with X.df at ~300 reference plots. A mislabelled stack gives
+# cor≈0, and a correct one stays high (the temporal-pooling shift keeps it ≳0.7).
+if (max(abs(rd$Lon), na.rm = TRUE) > 180) {                          # rd Lon/Lat are EPSG:5179 meters = TD grid
+  set.seed(1L); chk <- sample(seq_len(nrow(tr)), min(300L, nrow(tr)))
+  xy <- as.matrix(rd[match(tr$Plot_ID[chk], rd$Plot_ID), .(Lon, Lat)])
+  e  <- raster::extract(TD[[s2_med]], xy)
+  cors <- vapply(s2_med, function(cn) suppressWarnings(stats::cor(e[, cn], X.df[chk, cn], use = "complete.obs")), numeric(1))
+  med_cor <- stats::median(cors, na.rm = TRUE)
+  log_time(sprintf("PRE-FLIGHT S2 alignment: median band cor(raster, features) = %.3f over %d plots (want > 0.7)", med_cor, length(chk)))
+  if (is.na(med_cor) || med_cor < 0.5)
+    stop("S2 raster MISALIGNED with training features (median cor ", round(med_cor, 3),
+         ") — fix the 03b band order/names before the expensive run.", call. = FALSE)
+} else log_time("PRE-FLIGHT skipped (plot coords not in 5179 metres).")
+
+# ===== 3+4. wall-to-wall k = 1 imputation — STREAMING (bounded RAM) ==========================
+# Memory stays bounded: opt_md and TD go to the workers once via clusterExport, each batch of BATCH
+# chunks is written to disk and freed before the next, and `cores` is capped. Each worker holds one
+# copy of opt_md plus a transient spike of about (forest cells per chunk) x (library size) x 8 bytes,
+# so a core count that fits one library can exhaust memory with another. With IMPUTE_FREE_GB set to
+# the free memory in GB, the worker count is fitted to it from the measured model size, library size
+# and grid width. A smaller IMPUTE_CHUNK shrinks the spike and lets more cores run, since CPU is
+# rarely the limit, and IMPUTE_CORES / IMPUTE_CHUNK can also be pinned directly. The projected peak is
+# printed below (lower IMPUTE_CORES or IMPUTE_CHUNK if it nears free memory), and per-batch
+# throughput and ETA are written to models/impute_perf*.csv for tuning the next run.
+CHUNK <- if (exists("IMPUTE_CHUNK")) as.integer(IMPUTE_CHUNK) else 6L     # smaller default -> smaller spike -> more cores
+md_gb  <- as.numeric(utils::object.size(opt_md)) / 1e9
+n_ref  <- nrow(tr); FOREST_FR <- 0.75; SAFE <- 0.78                       # dense-chunk forest fraction; RAM safety margin
+phys   <- max(1L, parallel::detectCores(logical = FALSE))
+free_gb <- if (exists("IMPUTE_FREE_GB")) as.numeric(IMPUTE_FREE_GB) else NA_real_
+per_worker_gb <- md_gb + CHUNK * nc * (n_ref * FOREST_FR + length(PRED)) * 8 / 1e9  # opt_md + newtargets spike + read buf
+# CORES_CAP is a launch-safe ceiling, and the binding constraint is worker startup rather than
+# memory: a SOCK cluster asked for more than roughly 16 workers can stall while they launch, since
+# each one is a separate R process contending for sockets. Memory would often allow more. Override
+# with IMPUTE_CORES if your machine launches them cleanly.
+CORES_CAP <- if (exists("IMPUTE_CORES_MAX")) as.integer(IMPUTE_CORES_MAX) else 16L
+cores <- if (exists("IMPUTE_CORES")) as.integer(IMPUTE_CORES) else
+         if (!is.na(free_gb)) max(1L, min(phys, CORES_CAP, as.integer(floor(SAFE * free_gb / per_worker_gb)))) else
+         min(CORES_CAP, max(1L, parallel::detectCores() - 1L))           # no IMPUTE_FREE_GB -> spike-safe default
+BATCH <- 40L                                                             # chunks written per flush (bounds master RAM)
+starts <- seq(1L, nr, by = CHUNK); nbatch <- ceiling(length(starts) / BATCH)
+log_time(sprintf("ADAPTIVE plan: cores=%d chunk=%d | opt_md=%.2fGB refs=%d per-worker≈%.2fGB peak≈%.0fGB / free=%s | %d chunks / %d batches",
+                 cores, CHUNK, md_gb, n_ref, per_worker_gb, cores * per_worker_gb,
+                 if (is.na(free_gb)) "?(set IMPUTE_FREE_GB to auto-size)" else sprintf("%.0fGB", free_gb),
+                 length(starts), nbatch))
+log_time("  -> if memory runs short, lower IMPUTE_CHUNK; a smaller chunk also lets more cores run.")
+
+log_time(sprintf("creating SOCK cluster (%d workers, sequential launch)... errors out after 180s instead of hanging forever; if it fails, set a smaller IMPUTE_CORES.", cores))
+# setup_strategy = "sequential" starts the workers one at a time (the all-at-once default can hang
+# before any work begins), setup_timeout turns a stuck launch into an error, and outfile = "" sends
+# worker output to the console.
+cl <- parallel::makeCluster(cores, type = "SOCK", outfile = "",
+                            setup_strategy = "sequential", setup_timeout = 180)
+registerDoSNOW(cl)
+log_time("SOCK cluster up; exporting model + stack to workers...")
+parallel::clusterEvalQ(cl, { suppressPackageStartupMessages({
+  library(raster); library(yaImpute); library(randomForest); library(gower) })
+  raster::rasterOptions(maxmemory = 1e9); NULL })
+parallel::clusterExport(cl, c("opt_md","TD","vg_levels","fror_levels","CHUNK","nr"))   # once, for all tasks
+
+impute_chunk <- function(r0) {                                  # runs on worker; opt_md/TD from clusterExport
+  n <- min(CHUNK, nr - r0 + 1L)
+  m <- raster::getValues(TD, row = r0, nrows = n)               # (n*nc) x length(PRED) matrix, columns = PRED
+  out <- rep(NA_real_, nrow(m)); dst <- rep(NA_real_, nrow(m))  # dst = nearest-reference distance to the matched plot
+  ok <- stats::complete.cases(m)
+  if (any(ok)) {
+    d <- as.data.frame(m[ok, , drop = FALSE])
+    d$V_VG <- factor(as.character(d$V_VG), levels = vg_levels)
+    d$FROR <- factor(as.character(d$FROR), levels = fror_levels)
+    ok2 <- stats::complete.cases(d)                            # drop cells whose V_VG/FROR code is unseen in training
+    if (any(ok2)) {
+      dd <- d[ok2, , drop = FALSE]; rownames(dd) <- paste0("T", seq_len(nrow(dd)))
+      nt <- yaImpute::newtargets(opt_md, newdata = dd)          # $neiIdsTrgs = matched plot, $neiDstTrgs = its distance
+      out[which(ok)[ok2]] <- as.numeric(nt$neiIdsTrgs[, 1])
+      dst[which(ok)[ok2]] <- as.numeric(nt$neiDstTrgs[, 1])
+    }
+  }
+  list(idx = out, dst = dst)                                   # each length n*nc, row-major
+}
+parallel::clusterExport(cl, "impute_chunk")
+
+out_r <- raster::raster(TD)
+raster::crs(out_r) <- "EPSG:5179"                               # stamp EPSG code (covar grid holds 5179 params but no authority code -> would ship as untagged)
+out_r <- raster::writeStart(out_r, filename = out_tif, overwrite = TRUE, datatype = "INT2U", NAflag = 0,   # categorical identifier: integer type, 0 = nodata
+                            options = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"))
+dst_r <- raster::raster(TD)                                     # companion nearest-reference distance raster, same grid
+raster::crs(dst_r) <- "EPSG:5179"
+dst_r <- raster::writeStart(dst_r, filename = dst_tif, overwrite = TRUE, datatype = "FLT4S",
+                            options = c("COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"))
+pb <- txtProgressBar(min = 0, max = length(starts), style = 3)
+done <- 0L; n_forest <- 0.0; idx_min <- Inf; idx_max <- -Inf
+perf <- vector("list", nbatch); t0_all <- Sys.time()            # per-batch throughput/ETA report -> impute_perf*.csv
+for (b in seq_len(nbatch)) {
+  tb0 <- Sys.time()
+  bi <- starts[((b - 1L) * BATCH + 1L):min(b * BATCH, length(starts))]
+  resb <- foreach(r0 = bi, .noexport = c("opt_md","TD","impute_chunk"),   # already on workers via clusterExport
+                  .options.snow = list(progress = function(k) setTxtProgressBar(pb, done + k)),
+                  .packages = c("raster","yaImpute","randomForest","gower")) %dopar% impute_chunk(r0)
+  nf_b <- 0.0
+  for (i in seq_along(bi)) {
+    v <- resb[[i]]$idx; out_r <- raster::writeValues(out_r, v, bi[i])
+    dst_r <- raster::writeValues(dst_r, resb[[i]]$dst, bi[i])
+    nf <- sum(!is.na(v))
+    if (nf) { n_forest <- n_forest + nf; nf_b <- nf_b + nf
+              idx_min <- min(idx_min, min(v, na.rm = TRUE)); idx_max <- max(idx_max, max(v, na.rm = TRUE)) }
+  }
+  done <- done + length(bi); setTxtProgressBar(pb, done)
+  rm(resb); gc(FALSE)                                          # <-- release this batch before the next
+  dt_b  <- as.numeric(difftime(Sys.time(), tb0,     units = "secs"))
+  cum_s <- as.numeric(difftime(Sys.time(), t0_all,  units = "secs"))
+  eta_m <- (cum_s / b) * (nbatch - b) / 60                     # linear ETA from mean batch time so far
+  cps   <- nf_b / max(dt_b, 1e-6)
+  perf[[b]] <- data.frame(batch = b, chunks = length(bi), forest_cells = nf_b, wall_sec = round(dt_b, 1),
+                          cells_per_sec = round(cps), cores = cores, chunk = CHUNK,
+                          cum_min = round(cum_s / 60, 2), eta_min = round(eta_m, 1))
+  cat(sprintf("\n[%s] batch %d/%d: %.0fs | %s forest cells | %s cells/s | cum %.1f min | ETA ~%.0f min\n",
+              format(Sys.time(), "%H:%M:%S"), b, nbatch, dt_b, format(nf_b, big.mark = ","),
+              format(round(cps), big.mark = ","), cum_s / 60, eta_m))
+  flush.console()                                               # show per-batch ETA live (RStudio buffers %dopar% output otherwise)
+}
+close(pb); parallel::stopCluster(cl)
+out_r <- raster::writeStop(out_r)
+dst_r <- raster::writeStop(dst_r)
+log_time(sprintf("  nearest-reference distance raster -> %s", dst_tif))
+total_s <- as.numeric(difftime(Sys.time(), t0_all, units = "secs"))
+perf_f  <- file.path(mdl_dir, sprintf("impute_perf%s.csv", psuf))
+data.table::fwrite(data.table::rbindlist(perf), perf_f, bom = TRUE)          # per-batch throughput/ETA log
+log_time(sprintf("imputation done (%d chunks x %d rows, %d cores, %d batches, %.1f min) | perf -> %s",
+                 length(starts), CHUNK, cores, nbatch, total_s / 60, basename(perf_f)))
+log_time(sprintf("  throughput: %s forest cells/s overall (%s /s/core)",
+                 format(round(n_forest / max(total_s, 1e-6)), big.mark = ","),
+                 format(round(n_forest / max(total_s, 1e-6) / cores), big.mark = ",")))
+
+cat(sprintf("\nDONE -> %s\n  imputed forest cells = %s (%.2f Mha) | index range = %g..%g (expect 1..%d)\n",
+            out_tif, format(n_forest, big.mark = ","), n_forest * 0.09 / 1e6, idx_min, idx_max, nrow(ref)))
+cat("Next:\n",
+    " 1) source pipeline/05c_index_to_attributes.R          (index -> attribute rasters + dom_species legend)\n",
+    " 2) source pipeline/06b_apply_landcover_filter.R          (RE-APPLY built/barren/water filter)\n",
+    " 3) validate (pipeline/07b_compare_families.R): imputed FT vs field FT (+ vs the forest-type map) + passenger biomass/shannon/domsp.\n")
+
+}   # end else (non-STAMP_ONLY: training + wall-to-wall)

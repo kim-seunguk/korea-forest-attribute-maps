@@ -1,0 +1,16 @@
+target,level,nominal,coverage,mean_width,n,stratum
+coniferfrac_full,50%,0.5,0.5311,0.2462,13023,all
+coniferfrac_full,80%,0.8,0.8741,0.4678,13023,all
+coniferfrac_full,95%,0.95,0.9641,0.7154,13023,all
+Bio_a_ha,50%,0.5,0.521,89.3872,13013,all
+Bio_a_ha,80%,0.8,0.8332,169.8384,13013,all
+Bio_a_ha,95%,0.95,0.96,259.7454,13013,all
+Bio_a_ha,80%,0.8,0.7711,166.3408,4338,low_third
+Bio_a_ha,80%,0.8,0.9903,167.1396,4337,mid_third
+Bio_a_ha,80%,0.8,0.7381,176.0342,4338,high_third
+Bio_a_ha,80%,0.8,0.8264,163.5079,4338,pred_low_third
+Bio_a_ha,80%,0.8,0.8457,162.2916,4337,pred_mid_third
+Bio_a_ha,80%,0.8,0.8273,183.714,4338,pred_high_third
+shannon_full,50%,0.5,0.4998,0.5828,13023,all
+shannon_full,80%,0.8,0.8137,1.1074,13023,all
+shannon_full,95%,0.95,0.9618,1.6936,13023,all

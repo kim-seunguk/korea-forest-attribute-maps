@@ -1,0 +1,13 @@
+target,stratum,predset,scheme,point,value,window,rmse,nir,ci_lo,ci_hi,n
+coniferfrac_full,full,full,spatial,0.7197,0.4726,0.78,0.1829,,0.7079,0.7311,13023
+coniferfrac_full,full,full,random,0.7307,0.5009,0.7965,0.1792,,0.7193,0.7418,13023
+coniferfrac_full,full,full,test,0.6978,0.4567,0.9321,0.1949,,0.6709,0.723,2989
+shannon_full,full,full,spatial,0.3217,0.4408,0.5832,0.4198,,0.3059,0.3373,13023
+shannon_full,full,full,random,0.3401,0.4543,0.5758,0.414,,0.3244,0.3549,13023
+shannon_full,full,full,test,0.3496,0.4637,0.6845,0.4213,,0.3139,0.3861,2989
+Bio_a_ha,-,full,spatial,0.3131,,0.5089,63.9054,,0.2934,0.332,13013
+Bio_a_ha,-,full,random,0.3365,,0.6385,62.809,,0.318,0.3552,13013
+Bio_a_ha,-,full,test,0.3231,,0.4748,64.4434,,0.2735,0.3699,2986
+domsp_full,full,full,spatial,0.5224,0.7411,,,0.2886,0.5106,0.5328,13023
+domsp_full,full,full,random,0.5457,0.7663,,,0.2886,0.5354,0.5562,13023
+domsp_full,full,full,test,0.5711,0.7872,,,0.3252,0.5475,0.5937,2989
